@@ -1,0 +1,42 @@
+---
+import designSystem from '../../profile_design_system.json';
+import InstagramIcon from './icons/instagramIcon.astro';
+import WhatsAppIcon from './icons/whatsappIcon.astro';
+import FacebookIcon from './icons/facebookIcon.astro'; // Asegúrate de crear este componente también
+import GitHubIcon from './icons/githubIcon.astro';
+import LinkedinIcon from './icons/linkedinIcon.astro';
+
+const profile = designSystem.profile;
+
+const socialIconsData = designSystem.social_icons_bottom;
+
+// Un mapa o un switch para elegir el componente de icono correcto
+const IconMap: Record<string, any> = {
+  Instagram: InstagramIcon,
+  WhatsApp: WhatsAppIcon,
+  Facebook: FacebookIcon,
+  GitHub: GitHubIcon, // Añade aquí todos tus iconos
+  LinkedIn: LinkedinIcon,
+};
+---
+<nav class="flex justify-center space-x-6 mb-8">
+  {socialIconsData.map((socialLink) => {
+    const IconComponent = IconMap[socialLink.name];
+    if (!IconComponent) {
+      console.warn(`No se encontró el componente para el icono: ${socialLink.name}`);
+      return null; // No renderizar si no hay componente
+    }
+    return (
+      <a
+        href={socialLink.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="transition-transform duration-200 hover:scale-110"
+        style="color: var(--color-icon);"
+        aria-label={`Enlace a ${socialLink.name}`}
+      >
+        <IconComponent class="w-8 h-8" />
+      </a>
+    );
+  })}
+</nav>

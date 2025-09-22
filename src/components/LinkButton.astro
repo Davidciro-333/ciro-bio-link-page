@@ -1,0 +1,20 @@
+---
+interface Props {
+  title: string;
+  url: string;
+}
+
+const { title, url } = Astro.props;
+---
+<a
+  href={url}
+  target="_blank"
+  rel="noopener noreferrer"
+  class="flex items-center justify-between w-full py-4 px-6 mb-4 rounded-xl text-lg font-bold transition-all duration-300 ease-in-out"
+  style="background-color: var(--color-button-bg); color: var(--color-button-text); border: 1px solid var(--color-button-border);"
+>
+  <span>{title}</span>
+  <svg class="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+  </svg>
+</a>

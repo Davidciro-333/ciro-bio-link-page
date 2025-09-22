@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definición de variables CSS para el tema */
+:root {
+  --color-bg-page: #000000;
+  --color-bg-card: #211E1D;
+  --color-text-primary: #F1F1F1;
+  --color-text-secondary: #B0B0B0;
+  --color-button-bg: #1C1C1C;
+  --color-button-border: #333333;
+  --color-button-text: #F1F1F1;
+  --color-icon: #F1F1F1;
+  --color-toggle-bg: #2A2A2A;
+}
+
+body.light-theme {
+  --color-bg-page: #FFFFFF;
+  --color-bg-card: #F5F5F5;
+  --color-text-primary: #212121;
+  --color-text-secondary: #555555;
+  --color-button-bg: #EFEFEF;
+  --color-button-border: #CCCCCC;
+  --color-button-text: #212121;
+  --color-icon: #212121;
+  --color-toggle-bg: #DDDDDD;
+}
+
+body {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Fuentes personalizadas, si las tienes. Ejemplo: */
+/* @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap'); */
+
+/* Global styles (optional) */
+html {
+  scroll-behavior: smooth;
+}

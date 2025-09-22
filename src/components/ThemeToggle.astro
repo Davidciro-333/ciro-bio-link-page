@@ -1,0 +1,54 @@
+---
+// No necesitas importar nada aquí si los SVG se incrustan directamente
+---
+<button
+  id="theme-toggle"
+  class="absolute top-4 left-4 p-2 rounded-full transition-colors duration-300 z-10"
+  style="background-color: var(--color-toggle-bg); color: var(--color-icon);"
+  aria-label="Toggle theme"
+>
+  <div id="sun-icon">
+    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-sun"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" /></svg>
+  </div>
+  <div id="lock-icon" class="hidden">
+    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-moon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></svg>
+  </div>
+</button>
+<script>
+  // Envuelve tu script en una función IIFE para evitar conflictos de ámbito
+  (() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ahora, asegúrate de que estos elementos existan antes de usarlos
+      const themeToggle = document.getElementById('theme-toggle');
+      const sunIcon = document.getElementById('sun-icon');
+      const lockIcon = document.getElementById('lock-icon');
+      const body = document.body;
+
+      if (!themeToggle || !sunIcon || !lockIcon) {
+        console.error("No se encontraron los elementos del DOM para el toggle de tema.");
+        return; // Salir si los elementos no están presentes
+      }
+
+      // Cargar el tema guardado o usar el modo oscuro por defecto
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light-theme') {
+        body.classList.add('light-theme');
+        sunIcon.classList.add('hidden');
+        lockIcon.classList.remove('hidden');
+      } else {
+        body.classList.remove('light-theme');
+        sunIcon.classList.remove('hidden');
+        lockIcon.classList.add('hidden');
+      }
+
+      themeToggle.addEventListener('click', () => {
+        body.classList.toggle('light-theme');
+        sunIcon.classList.toggle('hidden');
+        lockIcon.classList.toggle('hidden');
+        
+        const currentTheme = body.classList.contains('light-theme') ? 'light-theme' : 'dark-theme';
+        localStorage.setItem('theme', currentTheme);
+      });
+    });
+  })();
+</script>

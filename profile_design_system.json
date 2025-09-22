@@ -1,0 +1,77 @@
+{
+  "theme": {
+    "dark": {
+      "background_page": "#000000",
+      "background_card": "#211E1D",
+      "text_primary": "#F1F1F1",
+      "text_secondary": "#B0B0B0",
+      "button_bg": "#1C1C1C",
+      "button_border": "#333333",
+      "button_text": "#F1F1F1",
+      "icon_color": "#F1F1F1",
+      "toggle_bg": "#2A2A2A"
+    },
+    "light": {
+      "background_page": "#FFFFFF",
+      "background_card": "#F5F5F5",
+      "text_primary": "#212121",
+      "text_secondary": "#555555",
+      "button_bg": "#EFEFEF",
+      "button_border": "#CCCCCC",
+      "button_text": "#212121",
+      "icon_color": "#212121",
+      "toggle_bg": "#DDDDDD"
+    }
+  },
+  "profile": {
+    "name": "David Ciro",
+    "title": "Desarrollador de software",
+    "picture_url": "/profile-pic.png"
+  },
+  "main_links": [
+    {
+      "title": "WhatsApp",
+      "url": "https://wa.me/3004049764"
+    },
+    {
+      "title": "Instagram",
+      "url": "https://instagram.com/itsciro.me"
+    },
+    {
+      "title": "Facebook",
+      "url": "https://www.facebook.com/davidalejandro.ciroortiz"
+    },
+    {
+      "title": "Mi Portafolio",
+      "url": "https://itsciro.com/portfolio",
+      "icon": ""
+    },
+    {
+      "title": "LinkedIn",
+      "url": "https://www.linkedin.com/in/david-ciro"
+    }
+  ],
+  "social_icons_bottom": [
+    {
+      "name": "Instagram",
+      "url": "https://instagram.com/itsciro.me"
+    },
+    {
+      "name": "WhatsApp",
+      "url": "https://wa.me/3004049764"
+    },
+    {
+      "name": "Facebook",
+      "url": "https://www.facebook.com/davidalejandro.ciroortiz"
+    },
+    {
+      "name": "GitHub",
+      "url": "https://github.com/davidciro-333"
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://www.linkedin.com/in/david-ciro"
+    }
+
+  ]
+}
