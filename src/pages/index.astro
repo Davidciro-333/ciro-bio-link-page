@@ -6,12 +6,13 @@ import ThemeToggle from '../components/ThemeToggle.astro';
 import SocialIcons from '../components/SocialIcons.astro';
 import LinkButton from '../components/LinkButton.astro';
 import designSystem from '../../profile_design_system.json';
+import SpotifyCard from '../components/SpotifyCard.astro';
 
 const profile = designSystem.profile;
 const mainLinks = designSystem.main_links;
 ---
 
-<Layout title="David Ciro - Bio Link">
+<Layout title="David Ciro">
   <main class="relative flex flex-col items-center min-h-screen py-8 px-4 max-w-sm mx-auto">
     
     <ThemeToggle /> {/* client:load para que el script JS se ejecute */}
@@ -43,6 +44,10 @@ const mainLinks = designSystem.main_links;
         <LinkButton title={link.title} url={link.url} />
       ))}
     </section>
+
+    <div class="mt-8 w-full">
+      <SpotifyCard />
+    </div>
 
   </main>
 </Layout>

@@ -1,0 +1,56 @@
+---
+---
+<div id="spotify-card" class="w-full max-w-sm mx-auto p-4 rounded-lg flex items-center space-x-4 transition-opacity duration-500 opacity-0" style="background-color: var(--color-button-bg); border: 1px solid var(--color-button-border);">
+  <p style="color: var(--color-text-secondary);">Cargando música...</p>
+</div>
+
+<script>
+  async function fetchNowPlaying() {
+    const response = await fetch('/api/now-playing');
+    const data = await response.json();
+    return data;
+  }
+
+  async function setNowPlaying() {
+    const card = document.getElementById('spotify-card');
+    if (!card) return;
+
+    try {
+      const song = await fetchNowPlaying();
+
+      if (song.isPlaying) {
+        card.innerHTML = `
+          <div class="flex-shrink-0">
+            <img class="w-16 h-16 rounded-md" src="${song.albumImageUrl}" alt="${song.album}">
+          </div>
+          <div class="flex-grow min-w-0">
+            <a href="${song.songUrl}" target="_blank" rel="noopener noreferrer" class="font-bold truncate block hover:underline" style="color: var(--color-text-primary);">${song.title}</a>
+            <p class="truncate" style="color: var(--color-text-secondary);">${song.artist}</p>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="flex-shrink-0">
+            <div class="w-16 h-16 rounded-md flex items-center justify-center" style="background-color: var(--color-bg-card);">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M9 17v-13h10v8" /><path d="M9 8h10" /></svg>
+            </div>
+          </div>
+          <div class="flex-grow min-w-0">
+            <p class="font-bold" style="color: var(--color-text-primary);">No estoy escuchando música</p>
+            <p class="truncate" style="color: var(--color-text-secondary);">Spotify</p>
+          </div>
+        `;
+      }
+      card.classList.remove('opacity-0');
+    } catch (e) {
+      card.innerHTML = `<p style="color: var(--color-text-secondary);">No se pudo cargar la música.</p>`;
+      card.classList.remove('opacity-0');
+    }
+  }
+
+  // Ejecutar al cargar la página
+  setNowPlaying();
+  
+  // Opcional: Actualizar cada 30 segundos
+  setInterval(setNowPlaying, 30000);
+</script>
