@@ -41,7 +41,7 @@ export const GET: APIRoute = async () => {
       headers: {
         'content-type': 'application/json',
         // ¡Añadimos la optimización de caché!
-        'cache-control': 'public, s-maxage=60, stale-while-revalidate=30',
+        'cache-control': 'no-cache, no-store, must-revalidate',
       },
     }
   );
