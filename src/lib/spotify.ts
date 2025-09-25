@@ -15,6 +15,7 @@ const getAccessToken = async () => {
   }
 
   const response = await fetch(TOKEN_ENDPOINT, {
+    cache: 'no-store',
     method: 'POST',
     headers: {
       Authorization: `Basic ${basic}`,
@@ -33,6 +34,7 @@ export const getNowPlaying = async () => {
   const { access_token } = await getAccessToken();
 
   return fetch(NOW_PLAYING_ENDPOINT, {
+    cache: 'no-store',
     headers: {
       Authorization: `Bearer ${access_token}`
     }
@@ -43,6 +45,7 @@ export const getTopTracks = async () => {
   const { access_token } = await getAccessToken();
 
   return fetch(TOP_TRACKS_ENDPOINT, {
+    cache: 'no-store',
     headers: {
       Authorization: `Bearer ${access_token}`
     }
