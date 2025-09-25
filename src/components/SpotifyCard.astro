@@ -6,7 +6,7 @@
 
 <script>
   async function fetchNowPlaying() {
-    const response = await fetch('/api/now-playing');
+    const response = await fetch(`/api/now-playing?_=${new Date().getTime()}`);
     const data = await response.json();
     return data;
   }
