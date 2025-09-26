@@ -10,8 +10,6 @@ const TOP_TRACKS_ENDPOINT = `https://api.spotify.com/v1/me/top/tracks`;
 const TOKEN_ENDPOINT = `https://accounts.spotify.com/api/token`;
 
 const getAccessToken = async () => {
-  console.log(`Intentando conectar a: ${TOKEN_ENDPOINT}`);
-
   if (!refresh_token) {
     throw new Error("No se encontró la variable de entorno SPOTIFY_REFRESH_TOKEN");
   }
