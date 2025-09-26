@@ -1,54 +1,101 @@
 ---
-// No necesitas importar nada aquí si los SVG se incrustan directamente
+// No se necesita nada aquí por ahora
 ---
-<button
-  id="theme-toggle"
-  class="absolute top-4 left-4 p-2 rounded-full transition-colors duration-300 z-10"
-  style="background-color: var(--color-toggle-bg); color: var(--color-icon);"
-  aria-label="Toggle theme"
->
-  <div id="sun-icon">
-    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-sun"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" /></svg>
-  </div>
-  <div id="lock-icon" class="hidden">
-    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-moon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" /></svg>
-  </div>
-</button>
+
+<div class="container absolute top-4 left-4 z-10">
+  <label for="switch" class="toggle">
+    <input type="checkbox" class="input" id="switch" aria-label="Toggle theme">
+    
+    <div class="icon icon--moon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+        <path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd"></path>
+      </svg>
+    </div>
+
+    <div class="icon icon--sun">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+        <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"></path>
+      </svg>
+    </div>
+    
+  </label>
+</div>
+
+<style>
+  .container {
+    /* Contenedor para posicionar el toggle */
+  }
+
+  .toggle {
+    background-color: var(--color-toggle-bg); /* Usamos el color del tema */
+    color: var(--color-icon); /* Hereda el color a los SVG */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 0 50px 20px rgba(0, 0, 0, 0.1);
+    line-height: 1;
+  }
+
+  .input {
+    display: none;
+  }
+
+  .icon {
+    grid-column: 1 / 1;
+    grid-row: 1 / 1;
+    transition: transform 500ms;
+  }
+
+  .icon--moon {
+    transition-delay: 200ms;
+  }
+
+  .icon--sun {
+    transform: scale(0);
+  }
+
+  #switch:checked ~ .icon--moon {
+    transform: rotate(360deg) scale(0);
+  }
+
+  #switch:checked ~ .icon--sun {
+    transition-delay: 200ms;
+    transform: scale(1) rotate(360deg);
+  }
+</style>
+
 <script>
-  // Envuelve tu script en una función IIFE para evitar conflictos de ámbito
-  (() => {
-    document.addEventListener('DOMContentLoaded', () => {
-      // Ahora, asegúrate de que estos elementos existan antes de usarlos
-      const themeToggle = document.getElementById('theme-toggle');
-      const sunIcon = document.getElementById('sun-icon');
-      const lockIcon = document.getElementById('lock-icon');
-      const body = document.body;
+  document.addEventListener('DOMContentLoaded', () => {
+    // ANTES:
+    // const themeToggleCheckbox = document.getElementById('switch');
 
-      if (!themeToggle || !sunIcon || !lockIcon) {
-        console.error("No se encontraron los elementos del DOM para el toggle de tema.");
-        return; // Salir si los elementos no están presentes
-      }
+    // AHORA (La Solución):
+    const themeToggleCheckbox = document.getElementById('switch') as HTMLInputElement;
 
-      // Cargar el tema guardado o usar el modo oscuro por defecto
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'light-theme') {
+    const body = document.body;
+
+    if (!themeToggleCheckbox) return;
+
+    // Sincroniza el checkbox con el tema actual al cargar
+    if (localStorage.getItem('theme') === 'light-theme') {
+      themeToggleCheckbox.checked = true;
+    }
+
+    // Función para guardar el tema al cambiar
+    const handleThemeChange = () => {
+      if (themeToggleCheckbox.checked) {
         body.classList.add('light-theme');
-        sunIcon.classList.add('hidden');
-        lockIcon.classList.remove('hidden');
+        localStorage.setItem('theme', 'light-theme');
       } else {
         body.classList.remove('light-theme');
-        sunIcon.classList.remove('hidden');
-        lockIcon.classList.add('hidden');
+        localStorage.setItem('theme', 'dark-theme');
       }
+    };
 
-      themeToggle.addEventListener('click', () => {
-        body.classList.toggle('light-theme');
-        sunIcon.classList.toggle('hidden');
-        lockIcon.classList.toggle('hidden');
-        
-        const currentTheme = body.classList.contains('light-theme') ? 'light-theme' : 'dark-theme';
-        localStorage.setItem('theme', currentTheme);
-      });
-    });
-  })();
+    // Escuchar cambios en el checkbox
+    themeToggleCheckbox.addEventListener('change', handleThemeChange);
+  });
 </script>

@@ -1,19 +1,28 @@
 ---
+import { Image } from "astro:assets";
 ---
-<div id="spotify-card" class="w-full max-w-sm mx-auto p-4 rounded-lg flex items-center space-x-4 transition-opacity duration-500 opacity-0" style="background-color: var(--color-button-bg); border: 1px solid var(--color-button-border);">
+
+<div
+  id="spotify-card"
+  class="w-full max-w-sm mx-auto p-4 rounded-lg flex items-center space-x-4 transition-opacity duration-500 opacity-0"
+  style="background-color: var(--color-button-bg); border: 1px solid var(--color-button-border);"
+>
   <p style="color: var(--color-text-secondary);">Cargando música...</p>
 </div>
 
 <script>
   async function fetchNowPlaying() {
-    const response = await fetch("https://n8n.galacticaima.com/webhook/spotify-now-playing?ts=" + Date.now());
+    const response = await fetch(
+      "https://n8n.galacticaima.com/webhook/spotify-now-playing?ts=" +
+        Date.now(),
+    );
     const data = await response.json();
     console.log(data);
     return data;
   }
 
   async function setNowPlaying() {
-    const card = document.getElementById('spotify-card');
+    const card = document.getElementById("spotify-card");
     if (!card) return;
 
     try {
@@ -22,7 +31,7 @@
       if (song.isPlaying) {
         card.innerHTML = `
           <div class="flex-shrink-0">
-            <img class="w-16 h-16 rounded-md" src="${song.albumImageUrl}" alt="${song.album}">
+            <img width="64" height="64" class="rounded-md" src="${song.albumImageUrl}" alt="${song.album}" loading="lazy" decoding="async" />
           </div>
           <div class="flex-grow min-w-0">
             <a href="${song.songUrl}" target="_blank" rel="noopener noreferrer" class="font-bold truncate block hover:underline" style="color: var(--color-text-primary);">${song.title}</a>
@@ -42,16 +51,16 @@
           </div>
         `;
       }
-      card.classList.remove('opacity-0');
+      card.classList.remove("opacity-0");
     } catch (e) {
       card.innerHTML = `<p style="color: var(--color-text-secondary);">No se pudo cargar la música.</p>`;
-      card.classList.remove('opacity-0');
+      card.classList.remove("opacity-0");
     }
   }
 
   // Ejecutar al cargar la página
   setNowPlaying();
-  
+
   // Opcional: Actualizar cada 30 segundos
   setInterval(setNowPlaying, 35000);
 </script>
