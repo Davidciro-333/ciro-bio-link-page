@@ -46,6 +46,7 @@ export const GET: APIRoute = async () => {
         'CDN-Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
+        'Netlify-Cache-Tag': 'spotify-now-playing'
       },
     }
   );
