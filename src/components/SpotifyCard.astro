@@ -6,8 +6,9 @@
 
 <script>
   async function fetchNowPlaying() {
-    const response = await fetch(`/api/now-playing?ts=${Date.now()}`);
+    const response = await fetch("https://n8n.galacticaima.com/webhook/spotify-now-playing?ts=" + Date.now());
     const data = await response.json();
+    console.log(data);
     return data;
   }
 
@@ -16,7 +17,7 @@
     if (!card) return;
 
     try {
-      const song = await fetchNowPlaying();
+      const [song] = await fetchNowPlaying();
 
       if (song.isPlaying) {
         card.innerHTML = `
