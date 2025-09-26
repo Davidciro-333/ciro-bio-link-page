@@ -40,8 +40,10 @@ export const GET: APIRoute = async () => {
       status: 200,
       headers: {
         'content-type': 'application/json',
-        // ¡Añadimos la optimización de caché!
-        'cache-control': 'no-cache, no-store, must-revalidate',
+        // 🔑 Desactivar totalmente el caché en Vercel/Netlify
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     }
   );
