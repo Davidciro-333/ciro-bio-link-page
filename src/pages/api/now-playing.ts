@@ -41,7 +41,9 @@ export const GET: APIRoute = async () => {
       headers: {
         'content-type': 'application/json',
         // 🔑 Desactivar totalmente el caché en Vercel/Netlify
+        'Content-Type': 'application/json',
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'CDN-Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
       },
