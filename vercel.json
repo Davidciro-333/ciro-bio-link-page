@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/cirofolio/:path*",
+      "destination": "https://ciro-folio-david-ciros-projects-1ccecd05.vercel.app/cirofolio/:path*"
+    }
+  ]
+}
