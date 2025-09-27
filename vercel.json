@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/cirofolio/(.*)",
-      "destination": "https://cirofolio.vercel.app/$1"
+      "destination": "https://ciro-folio.vercel.app/$1"
     }
   ]
 }
