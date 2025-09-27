@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/cirofolio",
+      "destination": "https://ciro-folio.vercel.app/"
+    },
+    {
       "source": "/cirofolio/(.*)",
       "destination": "https://ciro-folio.vercel.app/$1"
     }
