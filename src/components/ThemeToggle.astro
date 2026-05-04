@@ -13,8 +13,15 @@
   btn.addEventListener('click', () => {
     const isDark = html.getAttribute('data-theme') === 'dark';
     const next = isDark ? 'light' : 'dark';
+
+    html.classList.add('theme-transitioning');
+    // Force style recalc so the browser registers the "from" state before the theme change
+    void html.offsetHeight;
+
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     btn.textContent = next === 'dark' ? '🌙' : '☀️';
+
+    setTimeout(() => html.classList.remove('theme-transitioning'), 450);
   });
 </script>
