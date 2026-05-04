@@ -7,6 +7,7 @@ export default defineConfig({
   output: 'static',
   adapter: vercel(),
   vite: {
+    // @ts-ignore
     plugins: [tailwindcss()]
   }
 });
