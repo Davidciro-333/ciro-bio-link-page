@@ -40,6 +40,8 @@ export async function GET() {
         album: data.item?.album?.name ?? null,
         albumImageUrl: data.item?.album?.images?.[0]?.url ?? null,
         songUrl: data.item?.external_urls?.spotify ?? null,
+        progressMs: data.progress_ms ?? 0,
+        durationMs: data.item?.duration_ms ?? 0,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

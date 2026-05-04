@@ -17,6 +17,40 @@
 </div>
 
 <script>
+  const SP_LOGO = `<svg class="sp-logo" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>`;
+
+  function fmt(ms: number): string {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    return `${m}:${String(s % 60).padStart(2, '0')}`;
+  }
+
+  let progressInterval: ReturnType<typeof setInterval> | null = null;
+
+  function startProgressTimer(progressMs: number, durationMs: number, fetchTime: number, isPlaying: boolean) {
+    if (progressInterval) clearInterval(progressInterval);
+    if (!isPlaying || durationMs <= 0) return;
+
+    function tick() {
+      const elapsed = Date.now() - fetchTime;
+      const current = Math.min(progressMs + elapsed, durationMs);
+      const pct = (current / durationMs) * 100;
+
+      const fill = document.getElementById('sp-progress-fill');
+      const time = document.getElementById('sp-progress-time');
+      if (fill) fill.style.width = pct + '%';
+      if (time) time.textContent = `${fmt(current)} / ${fmt(durationMs)}`;
+
+      if (current >= durationMs && progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+    }
+
+    tick();
+    progressInterval = setInterval(tick, 1000);
+  }
+
   async function fetchNowPlaying() {
     const response = await fetch('/api/now-playing?ts=' + Date.now());
     return response.json();
@@ -26,16 +60,22 @@
     const card = document.getElementById('spotify-card');
     if (!card) return;
 
+    const fetchTime = Date.now();
+
     try {
       const song = await fetchNowPlaying();
 
       if (song.isPlaying) {
+        const startPct = song.durationMs > 0
+          ? ((song.progressMs / song.durationMs) * 100).toFixed(2)
+          : '0';
+
         card.innerHTML = `
           <div class="now-row">
             <img class="now-cover" src="${song.albumImageUrl}" alt="${song.album ?? ''}" width="52" height="52" loading="lazy" />
             <div class="now-info">
               <div class="now-badge">
-                <svg class="sp-logo" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                ${SP_LOGO}
                 <div class="sp-dot"></div>
                 <span class="now-badge-text">Ahora escuchando</span>
               </div>
@@ -51,12 +91,24 @@
                 <div class="eq-bar" style="--h:7px;--sp:0.8s;--dl:0.15s"></div>
               </div>
               <div class="progress-wrap">
-                <div class="progress-bar"><div class="progress-fill"></div></div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="sp-progress-fill" style="width:${startPct}%;transition:none"></div>
+                </div>
+                <div class="progress-time" id="sp-progress-time">${fmt(song.progressMs)} / ${fmt(song.durationMs)}</div>
               </div>
             </div>
           </div>
         `;
+
+        // Re-enable transition after initial width is set, then start timer
+        requestAnimationFrame(() => {
+          const fill = document.getElementById('sp-progress-fill');
+          if (fill) fill.style.transition = '';
+          startProgressTimer(song.progressMs, song.durationMs, fetchTime, true);
+        });
+
       } else {
+        if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
         card.innerHTML = `
           <div class="now-row">
             <div class="now-cover-placeholder">
@@ -64,7 +116,7 @@
             </div>
             <div class="now-info">
               <div class="now-badge">
-                <svg class="sp-logo" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                ${SP_LOGO}
                 <span class="now-badge-text">Spotify</span>
               </div>
               <div class="now-title" style="color: var(--text-muted);">No estoy escuchando música</div>
@@ -73,6 +125,7 @@
         `;
       }
     } catch {
+      if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
       const card2 = document.getElementById('spotify-card');
       if (card2) card2.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">No se pudo cargar Spotify.</p>`;
     }

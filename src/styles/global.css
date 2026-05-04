@@ -260,10 +260,11 @@ body {
 .progress-wrap { width: 64px; }
 .progress-bar { height: 3px; background: rgba(200,215,255,0.10); border-radius: 2px; overflow: hidden; }
 .progress-fill {
-  height: 100%; width: 42%;
+  height: 100%; width: 0%;
   background: linear-gradient(90deg, var(--accent-a), var(--accent-c));
-  border-radius: 2px; animation: prog-grow 180s linear infinite;
+  border-radius: 2px; transition: width 0.8s linear;
 }
+.progress-time { font-size: 10px; color: var(--text-muted); text-align: right; margin-top: 3px; font-variant-numeric: tabular-nums; }
 
 /* ── EQUALIZER ── */
 .equalizer { display: flex; align-items: flex-end; gap: 2px; height: 18px; flex-shrink: 0; }
