@@ -1,22 +1,29 @@
 ---
 ---
 
-<div
-  id="spotify-card"
-  class="w-full max-w-sm mx-auto p-4 rounded-lg flex items-center space-x-4 transition-opacity duration-500 opacity-0"
-  style="background-color: var(--color-button-bg); border: 1px solid var(--color-button-border);"
->
-  <p style="color: var(--color-text-secondary);">Cargando música...</p>
+<div id="spotify-card" class="widget widget-now">
+  <div class="now-row">
+    <div class="now-cover-placeholder">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    </div>
+    <div class="now-info">
+      <div class="now-badge">
+        <svg class="sp-logo" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        <span class="now-badge-text">Cargando...</span>
+      </div>
+      <div class="now-title" style="color: var(--text-muted); font-size: 13px;">Conectando con Spotify</div>
+    </div>
+  </div>
 </div>
 
 <script>
   async function fetchNowPlaying() {
-    const response = await fetch("/api/now-playing?ts=" + Date.now());
+    const response = await fetch('/api/now-playing?ts=' + Date.now());
     return response.json();
   }
 
   async function setNowPlaying() {
-    const card = document.getElementById("spotify-card");
+    const card = document.getElementById('spotify-card');
     if (!card) return;
 
     try {
@@ -24,31 +31,50 @@
 
       if (song.isPlaying) {
         card.innerHTML = `
-          <div class="flex-shrink-0">
-            <img width="64" height="64" class="rounded-md" src="${song.albumImageUrl}" alt="${song.album}" loading="lazy" decoding="async" />
-          </div>
-          <div class="flex-grow min-w-0">
-            <a href="${song.songUrl}" target="_blank" rel="noopener noreferrer" class="font-bold truncate block hover:underline" style="color: var(--color-text-primary);">${song.title}</a>
-            <p class="truncate" style="color: var(--color-text-secondary);">${song.artist}</p>
+          <div class="now-row">
+            <img class="now-cover" src="${song.albumImageUrl}" alt="${song.album ?? ''}" width="52" height="52" loading="lazy" />
+            <div class="now-info">
+              <div class="now-badge">
+                <svg class="sp-logo" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                <div class="sp-dot"></div>
+                <span class="now-badge-text">Ahora escuchando</span>
+              </div>
+              <a href="${song.songUrl}" target="_blank" rel="noopener noreferrer" class="now-title" style="text-decoration:none;display:block;">${song.title}</a>
+              <div class="now-artist">${song.artist}</div>
+            </div>
+            <div class="now-right">
+              <div class="equalizer">
+                <div class="eq-bar" style="--h:8px;--sp:0.7s;--dl:0s"></div>
+                <div class="eq-bar" style="--h:14px;--sp:0.9s;--dl:0.1s"></div>
+                <div class="eq-bar" style="--h:10px;--sp:0.6s;--dl:0.2s"></div>
+                <div class="eq-bar" style="--h:16px;--sp:1.1s;--dl:0.05s"></div>
+                <div class="eq-bar" style="--h:7px;--sp:0.8s;--dl:0.15s"></div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+              </div>
+            </div>
           </div>
         `;
       } else {
         card.innerHTML = `
-          <div class="flex-shrink-0">
-            <div class="w-16 h-16 rounded-md flex items-center justify-center" style="background-color: var(--color-bg-card);">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 17a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M9 17v-13h10v8" /><path d="M9 8h10" /></svg>
+          <div class="now-row">
+            <div class="now-cover-placeholder">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             </div>
-          </div>
-          <div class="flex-grow min-w-0">
-            <p class="font-bold" style="color: var(--color-text-primary);">No estoy escuchando música</p>
-            <p class="truncate" style="color: var(--color-text-secondary);">Spotify</p>
+            <div class="now-info">
+              <div class="now-badge">
+                <svg class="sp-logo" viewBox="0 0 24 24" fill="#1db954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                <span class="now-badge-text">Spotify</span>
+              </div>
+              <div class="now-title" style="color: var(--text-muted);">No estoy escuchando música</div>
+            </div>
           </div>
         `;
       }
-      card.classList.remove("opacity-0");
-    } catch (e) {
-      card.innerHTML = `<p style="color: var(--color-text-secondary);">No se pudo cargar la música.</p>`;
-      card.classList.remove("opacity-0");
+    } catch {
+      const card2 = document.getElementById('spotify-card');
+      if (card2) card2.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">No se pudo cargar Spotify.</p>`;
     }
   }
 

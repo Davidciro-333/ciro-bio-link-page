@@ -1,7 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { Image } from "astro:assets"; // 1. Importa el componente 'Image'
-import profilePic from "../assets/profile-pic.png"; // 2. Importa tu imagen desde 'src/assets'
+import { Image } from "astro:assets";
+import profilePic from "../assets/profile-pic.png";
 import ThemeToggle from "../components/ThemeToggle.astro";
 import SocialIcons from "../components/SocialIcons.astro";
 import LinkButton from "../components/LinkButton.astro";
@@ -14,71 +14,40 @@ const mainLinks = designSystem.main_links;
 ---
 
 <Layout title="David">
-  <main
-    class="relative flex flex-col items-center min-h-screen py-8 px-4 max-w-sm mx-auto"
-  >
-    <ThemeToggle />
-    {/* client:load para que el script JS se ejecute */}
+  <ThemeToggle />
 
-    {/* Header Section */}
-    <header class="flex flex-col items-center mb-8 mt-16">
-      <Image
-        src={profilePic}
-        alt={profile.name}
-        width={128}
-        height={128}
-        loading="eager"
-        class="rounded-full border-4 border-white object-cover shadow-lg mb-4"
-      />
-      <h1
-        class="text-3xl font-extrabold"
-        style="color: var(--color-text-primary);"
-      >
-        {profile.name}
-      </h1>
-      <p class="text-md mt-1" style="color: var(--color-text-secondary);">
-        {profile.title}
-      </p>
-    </header>
+  <div class="page-container">
+    <div class="profile">
+      <div class="avatar-wrap">
+        <div class="avatar-ring"></div>
+        <div class="avatar-ring-mask"></div>
+        <div class="avatar-img-wrap">
+          <Image
+            src={profilePic}
+            alt={profile.name}
+            width={92}
+            height={92}
+            loading="eager"
+          />
+        </div>
+      </div>
+      <h1 class="profile-name">{profile.name}</h1>
+      <p class="profile-title">{profile.title}</p>
+    </div>
 
-    {/* Social Icons (Small, under name) */}
     <SocialIcons />
 
-    {/* Main Link Buttons */}
-    <section class="w-full">
-      {
-        mainLinks.map((link) => (
-          <LinkButton title={link.title} url={link.url} />
-        ))
-      }
-    </section>
-
-    <div class="mt-8 w-full">
-      <SpotifyCard />
+    <div class="links">
+      {mainLinks.map((link) => (
+        <LinkButton title={link.title} url={link.url} />
+      ))}
     </div>
 
-    <div class="mt-4 w-full">
-      <RecentlyPlayedCard />
-    </div>
+    <SpotifyCard />
+    <RecentlyPlayedCard />
 
-    <footer class="mt-8 w-full text-center">
-      <a
-        href="/privacidad"
-        style="color: var(--color-text-secondary); font-size: 0.75rem;"
-      >
-        Política de privacidad
-      </a>
-    </footer>
-  </main>
+    <div class="privacy">
+      <a href="/privacidad">Política de privacidad</a>
+    </div>
+  </div>
 </Layout>
-
-<style is:global>
-  /* Aquí puedes importar fuentes de Google Fonts si las necesitas  */
-  /* @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap'); */
-
-  /* Estilo para el nombre si tiene una fuente específica o un estilo bold extra */
-  h1 {
-    font-family: "Arial Black", sans-serif; /* Reemplaza con tu fuente si es personalizada */
-    /* text-shadow: 1px 1px 2px rgba(0,0,0,0.3); Opcional */
-  }
-</style>

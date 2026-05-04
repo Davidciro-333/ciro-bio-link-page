@@ -8,33 +8,71 @@ interface Props {
 const { title } = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark" data-palette="silver">
   <head>
-    <meta charset="UTF--8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/itsciroicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 
     <script is:inline>
-      const theme = (() => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
-          return localStorage.getItem('theme');
-        }
-        if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-          return 'light-theme';
-        }
-        return 'dark-theme';
-      })();
-
-      if (theme === 'light-theme') {
-        document.documentElement.classList.add('light-theme');
-      } else {
-        document.documentElement.classList.remove('light-theme');
-      }
+      const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      const palette = localStorage.getItem('palette') || 'silver';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.setAttribute('data-palette', palette);
     </script>
-    </head>
-  <body class="font-sans">
+  </head>
+  <body>
+    <div class="bg-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+    <div class="stars" id="stars"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
     <slot />
+
+    <script is:inline>
+      // Stars
+      const starsEl = document.getElementById('stars');
+      for (let i = 0; i < 55; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = Math.random() * 2.2 + 0.5;
+        s.style.cssText = `width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${Math.random()*4+3}s;--delay:-${Math.random()*6}s;`;
+        starsEl.appendChild(s);
+      }
+
+      // Cursor glow — solo activo sobre botones y widgets
+      const glow = document.getElementById('cursorGlow');
+      let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0, isOverTarget = false;
+
+      function attachGlowTargets() {
+        document.querySelectorAll('.link-btn, .widget, .social-icon').forEach(el => {
+          el.addEventListener('mouseenter', () => { isOverTarget = true; });
+          el.addEventListener('mouseleave', () => { isOverTarget = false; });
+        });
+      }
+      attachGlowTargets();
+
+      document.addEventListener('mousemove', e => {
+        mouseX = e.clientX; mouseY = e.clientY;
+        glow.style.opacity = isOverTarget ? '1' : '0';
+      });
+      document.addEventListener('mouseleave', () => { glow.style.opacity = '0'; });
+
+      (function loop() {
+        glowX += (mouseX - glowX) * 0.10;
+        glowY += (mouseY - glowY) * 0.10;
+        glow.style.left = glowX + 'px';
+        glow.style.top = glowY + 'px';
+        requestAnimationFrame(loop);
+      })();
+    </script>
   </body>
 </html>
