@@ -33,7 +33,6 @@ const { title } = Astro.props;
       <div class="orb orb-3"></div>
     </div>
     <div class="stars" id="stars"></div>
-    <div class="cursor-glow" id="cursorGlow"></div>
 
     <slot />
 
@@ -48,31 +47,16 @@ const { title } = Astro.props;
         starsEl.appendChild(s);
       }
 
-      // Cursor glow — solo activo sobre botones y widgets
-      const glow = document.getElementById('cursorGlow');
-      let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0, isOverTarget = false;
-
-      function attachGlowTargets() {
-        document.querySelectorAll('.link-btn, .widget, .social-icon').forEach(el => {
-          el.addEventListener('mouseenter', () => { isOverTarget = true; });
-          el.addEventListener('mouseleave', () => { isOverTarget = false; });
+      // Cursor glow local — solo dentro de cada elemento
+      document.querySelectorAll('.link-btn, .widget, .social-icon').forEach(el => {
+        el.addEventListener('mousemove', e => {
+          const rect = el.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          el.style.setProperty('--mouse-x', x + '%');
+          el.style.setProperty('--mouse-y', y + '%');
         });
-      }
-      attachGlowTargets();
-
-      document.addEventListener('mousemove', e => {
-        mouseX = e.clientX; mouseY = e.clientY;
-        glow.style.opacity = isOverTarget ? '1' : '0';
       });
-      document.addEventListener('mouseleave', () => { glow.style.opacity = '0'; });
-
-      (function loop() {
-        glowX += (mouseX - glowX) * 0.10;
-        glowY += (mouseY - glowY) * 0.10;
-        glow.style.left = glowX + 'px';
-        glow.style.top = glowY + 'px';
-        requestAnimationFrame(loop);
-      })();
     </script>
   </body>
 </html>
