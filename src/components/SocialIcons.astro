@@ -1,7 +1,6 @@
 ---
 import designSystem from '../../profile_design_system.json';
 import InstagramIcon from './icons/instagramIcon.astro';
-import WhatsAppIcon from './icons/whatsappIcon.astro';
 import FacebookIcon from './icons/facebookIcon.astro'; // Asegúrate de crear este componente también
 import GitHubIcon from './icons/githubIcon.astro';
 import LinkedinIcon from './icons/linkedinIcon.astro';
@@ -13,7 +12,6 @@ const socialIconsData = designSystem.social_icons_bottom;
 // Un mapa o un switch para elegir el componente de icono correcto
 const IconMap: Record<string, any> = {
   Instagram: InstagramIcon,
-  WhatsApp: WhatsAppIcon,
   Facebook: FacebookIcon,
   GitHub: GitHubIcon, // Añade aquí todos tus iconos
   LinkedIn: LinkedinIcon,
