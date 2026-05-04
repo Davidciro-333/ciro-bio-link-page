@@ -7,6 +7,7 @@ import SocialIcons from "../components/SocialIcons.astro";
 import LinkButton from "../components/LinkButton.astro";
 import designSystem from "../../profile_design_system.json";
 import SpotifyCard from "../components/SpotifyCard.astro";
+import RecentlyPlayedCard from "../components/RecentlyPlayedCard.astro";
 
 const profile = designSystem.profile;
 const mainLinks = designSystem.main_links;
@@ -54,6 +55,10 @@ const mainLinks = designSystem.main_links;
 
     <div class="mt-8 w-full">
       <SpotifyCard />
+    </div>
+
+    <div class="mt-4 w-full">
+      <RecentlyPlayedCard />
     </div>
 
     <footer class="mt-8 w-full text-center">
