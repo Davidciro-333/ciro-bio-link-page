@@ -1,9 +1,10 @@
 export const prerender = false;
 
-const USERNAME = import.meta.env.GITHUB_USERNAME || 'Davidciro-333';
+const USERNAME =
+  process.env.GITHUB_USERNAME ?? import.meta.env.GITHUB_USERNAME ?? 'Davidciro-333';
 // Token opcional: sin él la API pública de GitHub permite ~60 req/h por IP.
 // Con un token (sin scopes / solo public_repo basta) sube a ~5000 req/h.
-const TOKEN = import.meta.env.GITHUB_TOKEN;
+const TOKEN = process.env.GITHUB_TOKEN ?? import.meta.env.GITHUB_TOKEN;
 
 interface GitHubRepo {
   name: string;

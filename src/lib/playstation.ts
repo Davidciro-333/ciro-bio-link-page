@@ -6,7 +6,9 @@ import {
 
 // El NPSSO caduca ~cada 2 meses: hay que renovarlo manualmente en el .env / Vercel.
 // Ver instrucciones en CLAUDE.md (sección PlayStation).
-const NPSSO = import.meta.env.PSN_NPSSO;
+// Se lee en runtime (process.env) para que el valor no quede "congelado" en el build:
+// así renovar el token en Vercel + redeploy basta, sin necesidad de un build limpio.
+const NPSSO = process.env.PSN_NPSSO ?? import.meta.env.PSN_NPSSO;
 
 // Cache en memoria del proceso (se mantiene mientras la función serverless esté "caliente").
 let cached: { auth: AuthorizationPayload; expiresAt: number } | null = null;
