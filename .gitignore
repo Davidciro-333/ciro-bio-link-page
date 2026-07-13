@@ -23,3 +23,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# design drafts / experiments (fuera del build de Astro)
+proposal-1-deep-space-v2.html
+tweaks-panel.jsx

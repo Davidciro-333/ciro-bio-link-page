@@ -1,0 +1,93 @@
+---
+---
+
+<div id="github-card" class="widget widget-last">
+  <div class="last-label">Proyectos en GitHub</div>
+  <div class="track-list">
+    <div class="track-item">
+      <div class="gh-commit-icon"></div>
+      <div class="track-info"><div class="track-title" style="color:var(--text-muted);">Cargando...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const GH_ICON = `<svg class="gh-logo" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.4-.5-1.6.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.5.3.9 1 .9 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>`;
+
+  // Colores por lenguaje (aprox. a los de GitHub)
+  const LANG_COLORS: Record<string, string> = {
+    TypeScript: '#3178c6', JavaScript: '#f1e05a', Astro: '#ff5d01', HTML: '#e34c26',
+    CSS: '#563d7c', Python: '#3572A5', Java: '#b07219', 'C#': '#178600',
+    'C++': '#f34b7d', Go: '#00ADD8', Rust: '#dea584', Vue: '#41b883',
+    Svelte: '#ff3e00', Shell: '#89e051', PHP: '#4F5D95', Ruby: '#701516',
+  };
+
+  function timeAgo(date: string): string {
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (diff < 60) return 'ahora';
+    if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
+    if (diff < 2592000) return `hace ${Math.floor(diff / 86400)}d`;
+    if (diff < 31536000) return `hace ${Math.floor(diff / 2592000)} mes`;
+    return `hace ${Math.floor(diff / 31536000)} a`;
+  }
+
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  async function loadGitHub() {
+    const card = document.getElementById('github-card');
+    if (!card) return;
+
+    try {
+      const response = await fetch('/api/github-activity');
+      const data = await response.json();
+      const repos = data.repos ?? [];
+      const profile = data.profile;
+
+      const header = profile
+        ? `<div class="last-label gh-header">${GH_ICON}<span>Proyectos en GitHub</span><span class="gh-stats">${profile.publicRepos} repos · ${profile.followers} seguidores</span></div>`
+        : `<div class="last-label">Proyectos en GitHub</div>`;
+
+      if (!Array.isArray(repos) || repos.length === 0) {
+        card.innerHTML = `${header}<p style="color:var(--text-muted);font-size:13px;">Sin repos públicos.</p>`;
+        return;
+      }
+
+      const rows = repos.map((r: any) => {
+        const meta = [];
+        if (r.language) {
+          const color = LANG_COLORS[r.language] ?? 'var(--text-muted)';
+          meta.push(`<span class="gh-lang"><span class="gh-lang-dot" style="background:${color}"></span>${escapeHtml(r.language)}</span>`);
+        }
+        if (r.stars > 0) meta.push(`<span class="gh-star">★ ${r.stars}</span>`);
+        const sub = meta.length
+          ? `<div class="track-artist gh-meta">${meta.join('')}</div>`
+          : (r.description ? `<div class="track-artist">${escapeHtml(r.description)}</div>` : '');
+
+        return `
+          <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="track-item" style="text-decoration:none;">
+            <div class="gh-commit-icon">${GH_ICON}</div>
+            <div class="track-info">
+              <div class="track-title">${escapeHtml(r.name)}</div>
+              ${sub}
+            </div>
+            <span class="track-time">${timeAgo(r.pushedAt)}</span>
+          </a>
+        `;
+      }).join('');
+
+      card.innerHTML = `${header}<div class="track-list">${rows}</div>`;
+    } catch {
+      const card2 = document.getElementById('github-card');
+      if (card2) card2.innerHTML = `
+        <div class="last-label">Proyectos en GitHub</div>
+        <p style="color:var(--text-muted);font-size:13px;">No se pudo cargar GitHub.</p>
+      `;
+    }
+  }
+
+  loadGitHub();
+  setInterval(loadGitHub, 10 * 60 * 1000);
+</script>

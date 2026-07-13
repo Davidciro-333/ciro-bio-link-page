@@ -1,0 +1,73 @@
+---
+---
+
+<div id="psn-recently-card" class="widget widget-last">
+  <div class="last-label">Últimos juegos jugados</div>
+  <div class="track-list">
+    <div class="track-item">
+      <div class="track-cover" style="background:var(--surface);"></div>
+      <div class="track-info"><div class="track-title" style="color:var(--text-muted);">Cargando...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function timeAgo(playedAt: string): string {
+    const diff = Math.floor((Date.now() - new Date(playedAt).getTime()) / 1000);
+    if (diff < 60) return 'ahora';
+    if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
+    return `hace ${Math.floor(diff / 86400)}d`;
+  }
+
+  function platformLabel(p: string): string {
+    if (!p || p === 'UNKNOWN') return '';
+    return p.toUpperCase();
+  }
+
+  async function loadPsnRecent() {
+    const card = document.getElementById('psn-recently-card');
+    if (!card) return;
+
+    try {
+      const response = await fetch('/api/psn-recently-played');
+      const games = await response.json();
+
+      if (!Array.isArray(games) || games.length === 0) {
+        card.innerHTML = `
+          <div class="last-label">Últimos juegos jugados</div>
+          <p style="color:var(--text-muted);font-size:13px;">Sin historial reciente.</p>
+        `;
+        return;
+      }
+
+      const rows = games.map((g: any) => {
+        const cover = g.imageUrl
+          ? `<img class="track-cover" src="${g.imageUrl}" alt="${g.title}" width="36" height="36" loading="lazy" />`
+          : `<div class="track-cover" style="background:var(--surface);"></div>`;
+        const plat = platformLabel(g.platform);
+        return `
+          <div class="track-item">
+            ${cover}
+            <div class="track-info">
+              <div class="track-title">${g.title}</div>
+              ${plat ? `<div class="track-artist">${plat}</div>` : ''}
+            </div>
+            <span class="track-time">${timeAgo(g.lastPlayedAt)}</span>
+          </div>
+        `;
+      }).join('');
+
+      card.innerHTML = `<div class="last-label">Últimos juegos jugados</div><div class="track-list">${rows}</div>`;
+    } catch {
+      const card2 = document.getElementById('psn-recently-card');
+      if (card2) card2.innerHTML = `
+        <div class="last-label">Últimos juegos jugados</div>
+        <p style="color:var(--text-muted);font-size:13px;">No se pudo cargar el historial.</p>
+      `;
+    }
+  }
+
+  loadPsnRecent();
+  setInterval(loadPsnRecent, 5 * 60 * 1000);
+</script>

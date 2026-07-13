@@ -8,6 +8,9 @@ import LinkButton from "../components/LinkButton.astro";
 import designSystem from "../../profile_design_system.json";
 import SpotifyCard from "../components/SpotifyCard.astro";
 import RecentlyPlayedCard from "../components/RecentlyPlayedCard.astro";
+import PlayStationCard from "../components/PlayStationCard.astro";
+import PlayStationRecentlyPlayedCard from "../components/PlayStationRecentlyPlayedCard.astro";
+import GitHubCard from "../components/GitHubCard.astro";
 
 const profile = designSystem.profile;
 const mainLinks = designSystem.main_links;
@@ -45,6 +48,11 @@ const mainLinks = designSystem.main_links;
 
     <SpotifyCard />
     <RecentlyPlayedCard />
+
+    <PlayStationCard />
+    <PlayStationRecentlyPlayedCard />
+
+    <GitHubCard />
 
     <div class="privacy">
       <a href="/privacidad">Política de privacidad</a>

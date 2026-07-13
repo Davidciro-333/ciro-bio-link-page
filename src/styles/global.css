@@ -296,6 +296,26 @@ body {
 .track-artist { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
+/* ── PLAYSTATION ── */
+.ps-logo { width: 16px; height: 16px; flex-shrink: 0; }
+#playstation-card .now-badge-text { color: #4a9eff; }
+#playstation-card .sp-dot { background: #0070d1; box-shadow: 0 0 6px #0070d1; }
+
+/* ── GITHUB ── */
+.gh-commit-icon {
+  width: 36px; height: 36px; border-radius: 6px; flex-shrink: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; color: var(--text);
+}
+.gh-logo { flex-shrink: 0; }
+.gh-header { display: flex; align-items: center; gap: 6px; }
+.gh-header .gh-logo { width: 13px; height: 13px; color: var(--text-muted); }
+.gh-stats { margin-left: auto; font-size: 9.5px; letter-spacing: 0.3px; text-transform: none; opacity: 0.8; }
+.gh-meta { display: flex; align-items: center; gap: 10px; }
+.gh-lang { display: inline-flex; align-items: center; gap: 4px; }
+.gh-lang-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.gh-star { font-variant-numeric: tabular-nums; }
+
 /* ── PRIVACY ── */
 .privacy { margin-top: 32px; animation: fadeUp 0.5s ease 0.80s both; }
 .privacy a { font-size: 11px; color: var(--text-muted); text-decoration: none; opacity: 0.55; transition: opacity 0.2s; }
