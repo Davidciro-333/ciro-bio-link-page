@@ -14,6 +14,12 @@ import GitHubCard from "../components/GitHubCard.astro";
 
 const profile = designSystem.profile;
 const mainLinks = designSystem.main_links;
+
+// PlayStation solo se muestra en desarrollo local: Sony bloquea las peticiones
+// desde IPs de datacenter (Vercel/AWS), así que en producción los endpoints se
+// cuelgan (500). Pendiente: obtener los datos desde una IP residencial/fetcher
+// externo y cachearlos. Cambiar a `true` cuando ese fetcher esté listo.
+const showPlayStation = import.meta.env.DEV;
 ---
 
 <Layout title="David">
@@ -49,8 +55,12 @@ const mainLinks = designSystem.main_links;
     <SpotifyCard />
     <RecentlyPlayedCard />
 
-    <PlayStationCard />
-    <PlayStationRecentlyPlayedCard />
+    {showPlayStation && (
+      <>
+        <PlayStationCard />
+        <PlayStationRecentlyPlayedCard />
+      </>
+    )}
 
     <GitHubCard />
 

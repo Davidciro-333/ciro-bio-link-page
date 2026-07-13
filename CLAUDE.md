@@ -87,6 +87,9 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 - `psn-recently-played.ts` usa `getRecentlyPlayedGames(auth, {limit:6, categories:['ps4_game','ps5_native_game']})`.
 - `PlayStationCard.astro` hace polling cada **60 s**; `PlayStationRecentlyPlayedCard.astro` cada ~5 min.
 - ⚠️ **El NPSSO caduca cada ~2 meses** → hay que renovarlo manualmente (ver abajo). Si falta o expiró, los endpoints devuelven error 500 controlado y los widgets muestran un fallback ("No se pudo cargar PlayStation").
+- 🚫 **NO funciona en producción (Vercel).** Sony bloquea/descarta las peticiones de auth desde IPs de datacenter (Vercel corre en AWS `iad1`), así que la llamada se cuelga y la función muere con 500 (body vacío). Verificado: la misma auth funciona en ~1.7 s desde una IP residencial (local), pero nunca completa desde Vercel. **No es problema del token ni del código.**
+- Por eso los widgets de PS se renderizan **solo en desarrollo** (`showPlayStation = import.meta.env.DEV` en `index.astro`). Los endpoints `psn-*.ts` siguen en el repo, listos para cuando se resuelva.
+- **Solución pendiente (fase futura):** un proceso fuera de Vercel (fetcher en IP residencial / GitHub Actions por probar) obtiene los datos de PSN cada X min y los cachea en un almacén (JSON, Upstash/Vercel KV); el sitio lee de ahí. Al implementarlo, poner `showPlayStation = true`.
 
 ### Integración con GitHub (endpoint SSR)
 - `github-activity.ts` llama a la API REST pública de GitHub: `GET /users/{user}/repos?sort=pushed` + `GET /users/{user}`.
