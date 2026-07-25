@@ -148,7 +148,19 @@ export async function GET() {
       ghFetch(`https://api.github.com/users/${USERNAME}`, headers),
     ]);
 
-    const repos = activity.length > 0 ? activity : await reposFromOwned(headers, LIMIT);
+    // La actividad pública real va primero (lo que trabajas ahora). Si no llega
+    // a LIMIT — GitHub solo expone ~90 días de eventos — se rellena con tus
+    // repos propios más recientes por push, sin duplicar los ya incluidos.
+    const repos = [...activity];
+    if (repos.length < LIMIT) {
+      const owned = await reposFromOwned(headers, LIMIT);
+      const seen = new Set(repos.map((r) => `${r.owner}/${r.name}`.toLowerCase()));
+      for (const r of owned) {
+        if (repos.length >= LIMIT) break;
+        if (seen.has(`${r.owner}/${r.name}`.toLowerCase())) continue;
+        repos.push(r);
+      }
+    }
 
     const profileRaw: GitHubProfile | null = profileRes.ok
       ? await profileRes.json()
