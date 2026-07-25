@@ -57,6 +57,9 @@
 
       const rows = repos.map((r: any) => {
         const meta = [];
+        if (r.isContribution && r.owner) {
+          meta.push(`<span class="gh-org">${escapeHtml(r.owner)}</span>`);
+        }
         if (r.language) {
           const color = LANG_COLORS[r.language] ?? 'var(--text-muted)';
           meta.push(`<span class="gh-lang"><span class="gh-lang-dot" style="background:${color}"></span>${escapeHtml(r.language)}</span>`);

@@ -315,6 +315,21 @@ body {
 .gh-lang { display: inline-flex; align-items: center; gap: 4px; }
 .gh-lang-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .gh-star { font-variant-numeric: tabular-nums; }
+.gh-org {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  color: var(--text-muted);
+  font-size: 9.5px;
+  letter-spacing: 0.2px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── PRIVACY ── */
 .privacy { margin-top: 32px; animation: fadeUp 0.5s ease 0.80s both; }
