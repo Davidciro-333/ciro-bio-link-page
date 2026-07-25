@@ -3,15 +3,66 @@
 
 <div id="recently-played-card" class="widget widget-last">
   <div class="last-label">Últimas escuchadas</div>
-  <div class="track-list">
+  <div id="rp-list" class="track-list">
     <div class="track-item">
       <div class="track-cover" style="background:var(--surface);"></div>
       <div class="track-info"><div class="track-title" style="color:var(--text-muted);">Cargando...</div></div>
     </div>
   </div>
+  <div id="sp-mini-wrap" class="sp-mini-wrap" style="display:none;">
+    <div class="sp-mini-hint">Muestra de ~30 s · canción completa con Spotify Premium abierto en el navegador</div>
+    <div id="sp-mini-embed"></div>
+  </div>
 </div>
 
 <script>
+  const PLAY_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+  const OPEN_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>`;
+
+  // --- Spotify iframe Embed API (mini-player compartido) ---
+  // Definimos el callback ANTES de inyectar el script para evitar el race.
+  let resolveApi: (api: any) => void;
+  const spotifyApi = new Promise<any>((res) => { resolveApi = res; });
+  (window as any).onSpotifyIframeApiReady = (IFrameAPI: any) => resolveApi(IFrameAPI);
+
+  let apiInjected = false;
+  function ensureApi() {
+    if (apiInjected) return;
+    apiInjected = true;
+    const s = document.createElement('script');
+    s.src = 'https://open.spotify.com/embed/iframe-api/v1';
+    s.async = true;
+    document.body.appendChild(s);
+  }
+
+  let controller: any = null;
+  async function playTrack(id: string) {
+    ensureApi();
+    const uri = 'spotify:track:' + id;
+    const wrap = document.getElementById('sp-mini-wrap');
+    if (wrap) wrap.style.display = 'block';
+
+    const IFrameAPI = await spotifyApi;
+
+    if (!controller) {
+      const target = document.getElementById('sp-mini-embed');
+      if (!target) return;
+      IFrameAPI.createController(
+        target,
+        { uri, width: '100%', height: 80 },
+        (ctrl: any) => {
+          controller = ctrl;
+          controller.play();
+        }
+      );
+    } else {
+      controller.loadUri(uri);
+      controller.play();
+    }
+
+    if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
   function timeAgo(playedAt: string): string {
     const diff = Math.floor((Date.now() - new Date(playedAt).getTime()) / 1000);
     if (diff < 60) return 'ahora';
@@ -20,40 +71,77 @@
     return `hace ${Math.floor(diff / 86400)}d`;
   }
 
+  function escapeHtml(s: string): string {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   async function loadRecentlyPlayed() {
-    const card = document.getElementById('recently-played-card');
-    if (!card) return;
+    const list = document.getElementById('rp-list');
+    if (!list) return;
 
     try {
       const response = await fetch('/api/recently-played');
       const tracks = await response.json();
 
       if (!Array.isArray(tracks) || tracks.length === 0) {
-        card.innerHTML = `
-          <div class="last-label">Últimas escuchadas</div>
-          <p style="color:var(--text-muted);font-size:13px;">Sin historial reciente.</p>
-        `;
+        list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Sin historial reciente.</p>`;
         return;
       }
 
-      const rows = tracks.map((track: any) => `
-        <a href="${track.songUrl}" target="_blank" rel="noopener noreferrer" class="track-item" style="text-decoration:none;">
-          <img class="track-cover" src="${track.albumImageUrl}" alt="${track.title}" width="36" height="36" loading="lazy" />
-          <div class="track-info">
-            <div class="track-title">${track.title}</div>
-            <div class="track-artist">${track.artist}</div>
-          </div>
-          <span class="track-time">${timeAgo(track.playedAt)}</span>
-        </a>
-      `).join('');
+      const rows = tracks.map((track: any) => {
+        const title = escapeHtml(track.title);
+        const artist = escapeHtml(track.artist);
+        const cover = `
+          <div class="track-cover-wrap">
+            <img class="track-cover" src="${track.albumImageUrl}" alt="${title}" width="36" height="36" loading="lazy" />
+            ${track.id ? `<span class="track-play">${PLAY_ICON}</span>` : ''}
+          </div>`;
+        const openLink = track.songUrl
+          ? `<a class="track-open" href="${track.songUrl}" target="_blank" rel="noopener noreferrer" title="Abrir en Spotify" aria-label="Abrir en Spotify">${OPEN_ICON}</a>`
+          : '';
 
-      card.innerHTML = `<div class="last-label">Últimas escuchadas</div><div class="track-list">${rows}</div>`;
+        // Con id → fila reproducible; sin id → solo enlace a Spotify.
+        if (track.id) {
+          return `
+            <div class="track-item sp-playable" role="button" tabindex="0" data-id="${escapeHtml(track.id)}" aria-label="Reproducir ${title}">
+              ${cover}
+              <div class="track-info">
+                <div class="track-title">${title}</div>
+                <div class="track-artist">${artist}</div>
+              </div>
+              ${openLink}
+              <span class="track-time">${timeAgo(track.playedAt)}</span>
+            </div>`;
+        }
+
+        return `
+          <a href="${track.songUrl}" target="_blank" rel="noopener noreferrer" class="track-item" style="text-decoration:none;">
+            ${cover}
+            <div class="track-info">
+              <div class="track-title">${title}</div>
+              <div class="track-artist">${artist}</div>
+            </div>
+            <span class="track-time">${timeAgo(track.playedAt)}</span>
+          </a>`;
+      }).join('');
+
+      list.innerHTML = rows;
+
+      list.querySelectorAll<HTMLElement>('.sp-playable').forEach((el) => {
+        const id = el.dataset.id;
+        if (!id) return;
+        el.addEventListener('click', () => playTrack(id));
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playTrack(id); }
+        });
+      });
+      // El enlace "abrir en Spotify" no debe disparar la reproducción de la fila.
+      list.querySelectorAll('.track-open').forEach((a) => {
+        a.addEventListener('click', (e) => e.stopPropagation());
+      });
     } catch {
-      const card2 = document.getElementById('recently-played-card');
-      if (card2) card2.innerHTML = `
-        <div class="last-label">Últimas escuchadas</div>
-        <p style="color:var(--text-muted);font-size:13px;">No se pudo cargar el historial.</p>
-      `;
+      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">No se pudo cargar el historial.</p>`;
     }
   }
 

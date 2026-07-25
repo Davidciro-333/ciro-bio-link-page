@@ -13,6 +13,7 @@ export async function GET() {
     const data = await response.json();
 
     const tracks = (data.items ?? []).map((item: any) => ({
+      id: item.track?.id ?? null,
       title: item.track?.name ?? null,
       artist: item.track?.artists?.[0]?.name ?? null,
       albumImageUrl: item.track?.album?.images?.[0]?.url ?? null,

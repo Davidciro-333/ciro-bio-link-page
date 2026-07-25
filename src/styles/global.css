@@ -296,6 +296,34 @@ body {
 .track-artist { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
+/* Fila reproducible (Últimas escuchadas) */
+.sp-playable { cursor: pointer; }
+.track-cover-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; }
+.track-cover-wrap .track-cover { width: 100%; height: 100%; }
+.track-play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0; transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.sp-playable:hover .track-play,
+.sp-playable:focus-visible .track-play { opacity: 1; }
+.sp-playable:focus-visible { outline: 2px solid var(--accent-1, #1db954); outline-offset: 2px; border-radius: 6px; }
+.track-open {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  color: var(--text-muted); opacity: 0; transition: opacity 0.15s ease, color 0.15s ease;
+}
+.track-item:hover .track-open { opacity: 0.7; }
+.track-open:hover { color: #1db954; opacity: 1; }
+
+.sp-mini-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(200, 215, 255, 0.08); }
+.sp-mini-hint { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4; }
+.sp-mini-wrap iframe { border-radius: 12px; display: block; }
+
 /* ── PLAYSTATION ── */
 .ps-logo { width: 16px; height: 16px; flex-shrink: 0; }
 #playstation-card .now-badge-text { color: #4a9eff; }
