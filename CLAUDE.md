@@ -92,10 +92,13 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 - **Solución pendiente (fase futura):** un proceso fuera de Vercel (fetcher en IP residencial / GitHub Actions por probar) obtiene los datos de PSN cada X min y los cachea en un almacén (JSON, Upstash/Vercel KV); el sitio lee de ahí. Al implementarlo, poner `showPlayStation = true`.
 
 ### Integración con GitHub (endpoint SSR)
-- `github-activity.ts` llama a la API REST pública de GitHub: `GET /users/{user}/repos?sort=pushed` + `GET /users/{user}`.
-- Devuelve los 5 repos propios más recientes por push (nombre, lenguaje, estrellas, fecha) + `{publicRepos, followers}`.
-- **Decisión de diseño:** se muestran *repos recientes*, NO un feed de commits. La cuenta tiene muy poca actividad pública en `/events` (a menudo sin el array `commits`), así que un feed de commits se vería vacío; los repos por push siempre están poblados.
-- `GITHUB_TOKEN` es **opcional**: sin él, la API pública permite ~60 req/h por IP; con token (sin scopes) sube a ~5000 req/h. `GitHubCard.astro` refresca cada 10 min.
+- `github-activity.ts` devuelve los 5 proyectos en los que **has trabajado/contribuido** más recientemente (nombre, owner, lenguaje, estrellas, fecha, si es contribución) + `{publicRepos, followers}`.
+- **Fuentes en cascada (de mejor a peor):**
+  1. **Contribuciones (GraphQL, requiere `GITHUB_TOKEN`)** — `contributionsCollection.commitContributionsByRepository` del **último año**. Es la fuente principal: incluye contribuciones a **repos de organizaciones** (p. ej. `Galactic-AIMA/*`) aunque tu último commit sea de hace meses. Ordena por la fecha de tu última contribución en cada repo.
+  2. **Actividad pública (`/users/{user}/events/public`)** — fallback si no hay token o GraphQL falla. Solo cubre ~90 días / los últimos ~300 eventos, así que se queda corto (no ve contribuciones antiguas).
+  3. **Repos propios (`/repos?sort=pushed&type=owner`)** — relleno para completar hasta 5 si las fuentes anteriores devuelven menos, sin duplicar.
+- **Decisión de diseño:** se muestran *proyectos recientes / contribuciones*, NO un feed de commits.
+- `GITHUB_TOKEN`: **necesario** para la fuente de contribuciones (GraphQL no funciona sin auth). Sin token todo sigue funcionando pero degradado a la actividad pública/repos propios (no muestra contribuciones antiguas como SignalFactoryApp). También sube el rate limit (~60→~5000 req/h). `GitHubCard.astro` refresca cada 10 min. **Debe estar configurado en Vercel.**
 
 ### Variables de entorno (`.env`, git-ignorado)
 Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.

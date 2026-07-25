@@ -104,6 +104,82 @@ async function reposFromActivity(
   return cards.filter((c): c is Card => c !== null);
 }
 
+interface ContribRepo {
+  repository: {
+    name: string;
+    nameWithOwner: string;
+    url: string;
+    description: string | null;
+    isFork: boolean;
+    stargazerCount: number;
+    primaryLanguage: { name: string } | null;
+    owner: { login: string };
+  };
+  contributions: { totalCount: number; nodes: { occurredAt: string }[] };
+}
+
+/**
+ * Fuente principal (requiere token): repos a los que has CONTRIBUIDO en el último
+ * año, vía la API GraphQL de GitHub. A diferencia de /events (solo ~90 días) o
+ * /repos?type=owner (solo repos propios), esto incluye contribuciones a repos de
+ * organizaciones aunque tu último commit ahí sea de hace meses. Ordena por la
+ * fecha de tu última contribución en cada repo.
+ */
+async function reposFromContributions(
+  token: string,
+  limit: number
+): Promise<Card[]> {
+  const query = `{
+    user(login: "${USERNAME}") {
+      contributionsCollection {
+        commitContributionsByRepository(maxRepositories: 25) {
+          repository {
+            name nameWithOwner url description isFork stargazerCount
+            primaryLanguage { name }
+            owner { login }
+          }
+          contributions(first: 1) { totalCount nodes { occurredAt } }
+        }
+      }
+    }
+  }`;
+
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'User-Agent': 'bio-link',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) return [];
+
+  const json = await res.json();
+  const list: ContribRepo[] | undefined =
+    json?.data?.user?.contributionsCollection?.commitContributionsByRepository;
+  if (!Array.isArray(list)) return [];
+
+  return list
+    .filter((c) => !c.repository.isFork)
+    .map((c): Card => {
+      const owner = c.repository.owner.login;
+      return {
+        name: c.repository.name,
+        owner,
+        isContribution: owner.toLowerCase() !== USERNAME.toLowerCase(),
+        description: c.repository.description,
+        language: c.repository.primaryLanguage?.name ?? null,
+        stars: c.repository.stargazerCount,
+        url: c.repository.url,
+        // Fecha de TU última contribución (nodos ordenados de más reciente a más antiguo).
+        pushedAt: c.contributions.nodes[0]?.occurredAt ?? new Date(0).toISOString(),
+      };
+    })
+    .sort((a, b) => +new Date(b.pushedAt) - +new Date(a.pushedAt))
+    .slice(0, limit);
+}
+
 /**
  * Fallback: tus repos propios más recientes por push. Se usa si la actividad
  * pública viene vacía (GitHub solo expone ~90 días de eventos).
@@ -143,14 +219,21 @@ export async function GET() {
 
   try {
     const LIMIT = 5;
-    const [activity, profileRes] = await Promise.all([
-      reposFromActivity(headers, LIMIT),
+
+    // Fuente principal: contribuciones del último año (incluye repos de org).
+    // Requiere token; si no hay o falla, cae a la actividad pública (/events).
+    const [primary, profileRes] = await Promise.all([
+      TOKEN
+        ? reposFromContributions(TOKEN, LIMIT)
+        : reposFromActivity(headers, LIMIT),
       ghFetch(`https://api.github.com/users/${USERNAME}`, headers),
     ]);
 
-    // La actividad pública real va primero (lo que trabajas ahora). Si no llega
-    // a LIMIT — GitHub solo expone ~90 días de eventos — se rellena con tus
-    // repos propios más recientes por push, sin duplicar los ya incluidos.
+    const activity =
+      primary.length > 0 ? primary : await reposFromActivity(headers, LIMIT);
+
+    // Lo real va primero. Si no llega a LIMIT se rellena con tus repos propios
+    // más recientes por push, sin duplicar los ya incluidos.
     const repos = [...activity];
     if (repos.length < LIMIT) {
       const owned = await reposFromOwned(headers, LIMIT);
