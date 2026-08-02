@@ -1,0 +1,198 @@
+---
+---
+
+<div id="recommend-card" class="widget">
+  <div class="last-label">Recomiéndame una canción</div>
+  <p class="rec-intro">Busca una canción y la añado a mi playlist. A ver qué me descubres.</p>
+
+  <div class="rec-search">
+    <input
+      id="rec-query"
+      type="search"
+      class="rec-input"
+      placeholder="Canción o artista..."
+      autocomplete="off"
+      aria-label="Buscar una canción en Spotify"
+    />
+  </div>
+
+  <div id="rec-results" class="track-list"></div>
+
+  <div id="rec-confirm" class="rec-confirm" hidden>
+    <div class="rec-confirm-track">
+      <img id="rec-confirm-cover" class="track-cover" width="36" height="36" alt="" />
+      <div class="track-info">
+        <div id="rec-confirm-title" class="track-title"></div>
+        <div id="rec-confirm-artist" class="track-artist"></div>
+      </div>
+    </div>
+    <input
+      id="rec-from"
+      type="text"
+      class="rec-input"
+      placeholder="Tu nombre (opcional)"
+      maxlength="40"
+      autocomplete="name"
+      aria-label="Tu nombre, opcional"
+    />
+    <div class="rec-actions">
+      <button id="rec-cancel" type="button" class="rec-btn rec-btn-ghost">Cancelar</button>
+      <button id="rec-send" type="button" class="rec-btn">Recomendar</button>
+    </div>
+  </div>
+
+  <div id="rec-status" class="rec-status" hidden></div>
+</div>
+
+<script>
+  const queryInput = document.getElementById('rec-query') as HTMLInputElement | null;
+  const results = document.getElementById('rec-results');
+  const confirmBox = document.getElementById('rec-confirm');
+  const fromInput = document.getElementById('rec-from') as HTMLInputElement | null;
+  const sendBtn = document.getElementById('rec-send') as HTMLButtonElement | null;
+  const cancelBtn = document.getElementById('rec-cancel');
+  const status = document.getElementById('rec-status');
+
+  if (queryInput && results && confirmBox && sendBtn && cancelBtn && status) {
+    let selectedId: string | null = null;
+    let debounce: ReturnType<typeof setTimeout>;
+    let lastQuery = '';
+
+    function escapeHtml(s: string): string {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showStatus(message: string, kind: 'ok' | 'error') {
+      status!.textContent = message;
+      status!.className = `rec-status rec-status-${kind}`;
+      status!.hidden = false;
+    }
+
+    function resetToSearch() {
+      selectedId = null;
+      confirmBox!.hidden = true;
+      results!.innerHTML = '';
+      queryInput!.value = '';
+      if (fromInput) fromInput.value = '';
+    }
+
+    async function search(query: string) {
+      try {
+        const res = await fetch('/api/song-search?q=' + encodeURIComponent(query));
+        const tracks = await res.json();
+
+        // Una respuesta lenta de una búsqueda anterior no debe pisar la actual.
+        if (query !== lastQuery) return;
+
+        if (!Array.isArray(tracks) || tracks.length === 0) {
+          results!.innerHTML = `<p class="rec-empty">Sin resultados.</p>`;
+          return;
+        }
+
+        results!.innerHTML = tracks
+          .map((t: any) => {
+            const name = escapeHtml(t.name);
+            const artists = escapeHtml(t.artists);
+            const cover = t.imageUrl
+              ? `<img class="track-cover" src="${escapeHtml(t.imageUrl)}" alt="" width="36" height="36" loading="lazy" />`
+              : `<div class="track-cover" style="background:var(--surface);"></div>`;
+            return `
+              <div class="track-item rec-result" role="button" tabindex="0"
+                   data-id="${escapeHtml(t.id)}" data-name="${name}" data-artists="${artists}"
+                   data-cover="${escapeHtml(t.imageUrl ?? '')}"
+                   aria-label="Recomendar ${name}">
+                ${cover}
+                <div class="track-info">
+                  <div class="track-title">${name}</div>
+                  <div class="track-artist">${artists}</div>
+                </div>
+              </div>`;
+          })
+          .join('');
+
+        results!.querySelectorAll<HTMLElement>('.rec-result').forEach((el) => {
+          const select = () => selectTrack(el);
+          el.addEventListener('click', select);
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
+          });
+        });
+      } catch {
+        results!.innerHTML = `<p class="rec-empty">No se pudo buscar ahora mismo.</p>`;
+      }
+    }
+
+    function selectTrack(el: HTMLElement) {
+      selectedId = el.dataset.id ?? null;
+      if (!selectedId) return;
+
+      const cover = document.getElementById('rec-confirm-cover') as HTMLImageElement;
+      const title = document.getElementById('rec-confirm-title');
+      const artist = document.getElementById('rec-confirm-artist');
+
+      if (el.dataset.cover) {
+        cover.src = el.dataset.cover;
+        cover.hidden = false;
+      } else {
+        cover.hidden = true;
+      }
+      if (title) title.textContent = el.dataset.name ?? '';
+      if (artist) artist.textContent = el.dataset.artists ?? '';
+
+      results!.innerHTML = '';
+      status!.hidden = true;
+      confirmBox!.hidden = false;
+      confirmBox!.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function send() {
+      if (!selectedId) return;
+
+      sendBtn!.disabled = true;
+      sendBtn!.textContent = 'Enviando...';
+
+      try {
+        const res = await fetch('/api/recommend-song', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackId: selectedId, from: fromInput?.value ?? '' }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showStatus(data.error ?? 'No se pudo enviar.', 'error');
+        } else if (data.duplicate) {
+          showStatus(`"${data.name}" ya estaba en la playlist. ¡Buen gusto!`, 'ok');
+          resetToSearch();
+        } else {
+          showStatus(`¡Gracias! "${data.name}" ya está en la playlist.`, 'ok');
+          resetToSearch();
+        }
+      } catch {
+        showStatus('No se pudo enviar. Inténtalo más tarde.', 'error');
+      } finally {
+        sendBtn!.disabled = false;
+        sendBtn!.textContent = 'Recomendar';
+      }
+    }
+
+    queryInput.addEventListener('input', () => {
+      const query = queryInput.value.trim();
+      lastQuery = query;
+      clearTimeout(debounce);
+
+      if (query.length < 2) {
+        results.innerHTML = '';
+        return;
+      }
+      debounce = setTimeout(() => search(query), 350);
+    });
+
+    sendBtn.addEventListener('click', send);
+    cancelBtn.addEventListener('click', () => {
+      confirmBox.hidden = true;
+      selectedId = null;
+    });
+  }
+</script>

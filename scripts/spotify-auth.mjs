@@ -22,6 +22,9 @@ const SCOPES = [
   'user-read-currently-playing',
   'user-read-recently-played',
   'user-read-playback-state',
+  // Necesario para que /api/recommend-song añada las canciones que recomiendan
+  // los visitantes a la playlist pública.
+  'playlist-modify-public',
 ].join(' ');
 
 function envVar(key) {

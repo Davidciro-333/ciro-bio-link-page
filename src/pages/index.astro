@@ -11,15 +11,23 @@ import RecentlyPlayedCard from "../components/RecentlyPlayedCard.astro";
 import PlayStationCard from "../components/PlayStationCard.astro";
 import PlayStationRecentlyPlayedCard from "../components/PlayStationRecentlyPlayedCard.astro";
 import GitHubCard from "../components/GitHubCard.astro";
+import RecommendSongCard from "../components/RecommendSongCard.astro";
 
 const profile = designSystem.profile;
 const mainLinks = designSystem.main_links;
 
-// PlayStation solo se muestra en desarrollo local: Sony bloquea las peticiones
-// desde IPs de datacenter (Vercel/AWS), así que en producción los endpoints se
-// cuelgan (500). Pendiente: obtener los datos desde una IP residencial/fetcher
-// externo y cachearlos. Cambiar a `true` cuando ese fetcher esté listo.
-const showPlayStation = import.meta.env.DEV;
+// Sony bloquea las peticiones desde IPs de datacenter (Vercel/AWS), así que en
+// producción los datos no salen de PSN sino de la cache que publica el job
+// `.github/workflows/psn-cache.yml` en un Gist. Si esa cache no está configurada
+// (sin PSN_GIST_ID), los widgets solo aparecen en desarrollo.
+const showPlayStation =
+  import.meta.env.DEV || Boolean(process.env.PSN_GIST_ID ?? import.meta.env.PSN_GIST_ID);
+
+// El recomendador necesita una playlist destino; sin ella el endpoint responde
+// 503, así que mejor no mostrar el formulario.
+const showRecommend = Boolean(
+  process.env.SPOTIFY_PLAYLIST_ID ?? import.meta.env.SPOTIFY_PLAYLIST_ID
+);
 ---
 
 <Layout title="David">
@@ -54,6 +62,7 @@ const showPlayStation = import.meta.env.DEV;
 
     <SpotifyCard />
     <RecentlyPlayedCard />
+    {showRecommend && <RecommendSongCard />}
 
     {showPlayStation && (
       <>
