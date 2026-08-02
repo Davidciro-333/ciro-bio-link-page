@@ -1,29 +1,45 @@
 import { getRecentlyPlayedGames } from 'psn-api';
 import { getPsnAuthorization } from '../../lib/playstation';
+import { getPsnCache } from '../../lib/psn-cache';
 
 export const prerender = false;
 
+/** Consulta PSN directamente. Solo sirve en desarrollo (ver psn-now-playing.ts). */
+async function fetchLive() {
+  const auth = await getPsnAuthorization();
+  const response = await getRecentlyPlayedGames(auth, {
+    limit: 6,
+    categories: ['ps4_game', 'ps5_native_game'],
+  });
+
+  return (response.data?.gameLibraryTitlesRetrieve?.games ?? []).map((g) => ({
+    title: g.name,
+    platform: g.platform,
+    imageUrl: g.image?.url ?? null,
+    lastPlayedAt: g.lastPlayedDateTime,
+    conceptId: g.conceptId,
+  }));
+}
+
 export async function GET() {
-  try {
-    const auth = await getPsnAuthorization();
-    const response = await getRecentlyPlayedGames(auth, {
-      limit: 6,
-      categories: ['ps4_game', 'ps5_native_game'],
-    });
-
-    const games = (response.data?.gameLibraryTitlesRetrieve?.games ?? []).map((g) => ({
-      title: g.name,
-      platform: g.platform,
-      imageUrl: g.image?.url ?? null,
-      lastPlayedAt: g.lastPlayedDateTime,
-      conceptId: g.conceptId,
-    }));
-
-    return new Response(JSON.stringify(games), {
-      status: 200,
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch {
-    return new Response(JSON.stringify({ error: 'Failed to fetch' }), { status: 500 });
+
+  const cached = await getPsnCache();
+  if (cached?.recent?.length) {
+    return json(cached.recent);
   }
+
+  if (import.meta.env.DEV) {
+    try {
+      return json(await fetchLive());
+    } catch {
+      /* cae al error de abajo */
+    }
+  }
+
+  return json({ error: 'Failed to fetch' }, 500);
 }

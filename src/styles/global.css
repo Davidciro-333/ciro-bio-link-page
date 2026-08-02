@@ -371,6 +371,40 @@ body {
 .privacy-card h1 { color: var(--text); font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem; font-family: 'Space Grotesk', sans-serif; }
 .privacy-card p { color: var(--text-muted); font-size: 0.875rem; line-height: 1.6; }
 
+/* ── RECOMENDAR CANCIÓN ── */
+.rec-intro { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+.rec-input {
+  width: 100%; box-sizing: border-box;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  padding: 9px 12px; font-size: 13px; font-family: inherit; color: var(--text);
+  transition: border-color 0.2s;
+}
+.rec-input::placeholder { color: var(--text-muted); }
+.rec-input:focus { outline: none; border-color: #1db954; }
+.rec-input::-webkit-search-cancel-button { filter: invert(0.5); }
+
+.rec-result { cursor: pointer; border-radius: 8px; padding: 7px 6px; transition: background 0.15s; }
+.rec-result:hover { background: var(--surface); }
+.rec-result:focus-visible { outline: 2px solid #1db954; outline-offset: 2px; }
+.rec-empty { font-size: 12px; color: var(--text-muted); padding: 8px 0; }
+
+.rec-confirm { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(200,215,255,0.08); }
+.rec-confirm-track { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rec-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.rec-btn {
+  background: #1db954; color: #fff; border: none; border-radius: 10px;
+  padding: 8px 16px; font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.rec-btn:hover { opacity: 0.88; }
+.rec-btn:disabled { opacity: 0.5; cursor: default; }
+.rec-btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.rec-btn-ghost:hover { color: var(--text); opacity: 1; }
+
+.rec-status { font-size: 12px; line-height: 1.5; margin-top: 10px; }
+.rec-status-ok { color: #1db954; }
+.rec-status-error { color: #ff6b6b; }
+
 /* ── KEYFRAMES ── */
 @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
