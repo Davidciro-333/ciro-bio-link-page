@@ -92,7 +92,8 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 ### Integración con PlayStation (endpoints SSR + `psn-api`)
 - No existe API oficial de Sony; se usa `psn-api` (API interna de PSN) autenticando con un **token NPSSO**.
 - `src/lib/playstation.ts` intercambia el NPSSO por tokens y **cachea el access token en memoria** (dura ~1h); reautentica solo cuando expira.
-- 🚫 **Vercel no puede hablar con PSN.** Sony bloquea/descarta las peticiones de auth desde IPs de datacenter (Vercel corre en AWS `iad1`): la llamada se cuelga y la función muere con 500. Verificado: la misma auth completa en ~2 s desde una IP residencial. **No es problema del token ni del código.**
+- 🚫 **Vercel no puede hablar con PSN.** Sony bloquea/descarta las peticiones de auth desde las IPs de Vercel (AWS `iad1`): la llamada se cuelga y la función muere con 500. **No es problema del token ni del código.**
+- ✅ Los **runners de GitHub Actions sí pasan** (verificado 2026-08-02: auth completa en ~1.2 s). O sea, el bloqueo de Sony no cubre todo datacenter; es específico de los rangos de Vercel/AWS.
 - **Por eso los datos vienen de una cache, no de PSN en vivo:**
   1. `.github/workflows/psn-cache.yml` corre `scripts/psn-fetch.mjs` **cada 15 min** en un runner de GitHub.
   2. El script autentica con el NPSSO, obtiene presencia + juegos recientes y hace `PATCH` a un **Gist público** (`psn.json`).

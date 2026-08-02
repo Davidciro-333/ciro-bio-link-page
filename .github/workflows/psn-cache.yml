@@ -10,9 +10,6 @@ on:
     # para un widget de "jugando ahora".
     - cron: '*/15 * * * *'
   workflow_dispatch:
-  push:
-    # Rama de prueba: permite validar el job antes de mezclarlo a master.
-    branches: [psn-cache]
 
 jobs:
   fetch:
