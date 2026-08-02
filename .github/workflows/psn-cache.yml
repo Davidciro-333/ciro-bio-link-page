@@ -1,0 +1,35 @@
+# Refresca la cache de PlayStation.
+#
+# Sony bloquea la auth de PSN desde las IPs de Vercel, así que este job corre
+# fuera de Vercel, obtiene el estado y lo deja en un Gist que el sitio lee.
+name: PSN cache
+
+on:
+  schedule:
+    # Cada 15 min. Los cron de Actions se retrasan en horas pico; es aceptable
+    # para un widget de "jugando ahora".
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+  push:
+    # Rama de prueba: permite validar el job antes de mezclarlo a master.
+    branches: [psn-cache]
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Solo psn-api: instalar todas las dependencias del sitio (Astro, Tailwind)
+      # sería un minuto de más para un script que no las usa.
+      - run: npm install psn-api@^2.18.0 --no-save --no-audit --no-fund
+
+      - run: node scripts/psn-fetch.mjs
+        env:
+          PSN_NPSSO: ${{ secrets.PSN_NPSSO }}
+          PSN_GIST_ID: ${{ secrets.PSN_GIST_ID }}
+          PSN_GIST_TOKEN: ${{ secrets.PSN_GIST_TOKEN }}
