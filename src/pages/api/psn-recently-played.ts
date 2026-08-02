@@ -1,11 +1,12 @@
-import { getRecentlyPlayedGames } from 'psn-api';
-import { getPsnAuthorization } from '../../lib/playstation';
 import { getPsnCache } from '../../lib/psn-cache';
 
 export const prerender = false;
 
 /** Consulta PSN directamente. Solo sirve en desarrollo (ver psn-now-playing.ts). */
 async function fetchLive() {
+  const { getRecentlyPlayedGames } = await import('psn-api');
+  const { getPsnAuthorization } = await import('../../lib/playstation');
+
   const auth = await getPsnAuthorization();
   const response = await getRecentlyPlayedGames(auth, {
     limit: 6,

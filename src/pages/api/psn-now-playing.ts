@@ -1,5 +1,3 @@
-import { getBasicPresence } from 'psn-api';
-import { getPsnAuthorization } from '../../lib/playstation';
 import { getPsnCache } from '../../lib/psn-cache';
 
 export const prerender = false;
@@ -7,8 +5,15 @@ export const prerender = false;
 /**
  * Consulta PSN directamente. Solo se usa en desarrollo: desde Vercel la
  * autenticación de Sony nunca completa y la función se queda colgada.
+ *
+ * `psn-api` se importa de forma dinámica a propósito: con un import estático
+ * queda dentro del bundle de producción y la función serverless carga 1.2 MB
+ * de código que nunca va a ejecutar, solo para arrancar.
  */
 async function fetchLive() {
+  const { getBasicPresence } = await import('psn-api');
+  const { getPsnAuthorization } = await import('../../lib/playstation');
+
   const auth = await getPsnAuthorization();
   const { basicPresence } = await getBasicPresence(auth, 'me');
 
