@@ -30,21 +30,38 @@ export async function GET() {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
       status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // El dato de origen solo cambia cada 15 min: que el CDN sirva a los
+        // visitantes en vez de invocar la función (y releer el Gist) cada vez.
+        ...(status === 200
+          ? { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' }
+          : {}),
+      },
     });
 
-  const cached = await getPsnCache();
-  if (cached?.nowPlaying) {
-    return json({ ...cached.nowPlaying, updatedAt: cached.updatedAt });
-  }
+  // Todo va dentro del try: cualquier excepción no capturada aquí hace que la
+  // función devuelva un 500 con el cuerpo vacío, que no dice nada de por qué.
+  try {
+    const cached = await getPsnCache();
 
-  if (import.meta.env.DEV) {
-    try {
-      return json({ ...(await fetchLive()), updatedAt: new Date().toISOString() });
-    } catch {
-      /* cae al error de abajo */
+    if (cached?.nowPlaying) {
+      return json({ ...cached.nowPlaying, updatedAt: cached.updatedAt });
     }
-  }
 
-  return json({ error: 'Failed to fetch' }, 500);
+    if (import.meta.env.DEV) {
+      try {
+        return json({ ...(await fetchLive()), updatedAt: new Date().toISOString() });
+      } catch {
+        /* cae al error de abajo */
+      }
+    }
+
+    return json(
+      { error: 'Failed to fetch', reason: cached ? 'sin nowPlaying en la cache' : 'cache ilegible' },
+      500
+    );
+  } catch (error) {
+    return json({ error: 'Failed to fetch', reason: String(error).slice(0, 200) }, 500);
+  }
 }

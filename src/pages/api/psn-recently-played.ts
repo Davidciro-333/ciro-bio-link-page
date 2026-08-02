@@ -25,21 +25,34 @@ export async function GET() {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
       status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(status === 200
+          ? { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' }
+          : {}),
+      },
     });
 
-  const cached = await getPsnCache();
-  if (cached?.recent?.length) {
-    return json(cached.recent);
-  }
+  try {
+    const cached = await getPsnCache();
 
-  if (import.meta.env.DEV) {
-    try {
-      return json(await fetchLive());
-    } catch {
-      /* cae al error de abajo */
+    if (cached?.recent?.length) {
+      return json(cached.recent);
     }
-  }
 
-  return json({ error: 'Failed to fetch' }, 500);
+    if (import.meta.env.DEV) {
+      try {
+        return json(await fetchLive());
+      } catch {
+        /* cae al error de abajo */
+      }
+    }
+
+    return json(
+      { error: 'Failed to fetch', reason: cached ? 'cache sin juegos' : 'cache ilegible' },
+      500
+    );
+  } catch (error) {
+    return json({ error: 'Failed to fetch', reason: String(error).slice(0, 200) }, 500);
+  }
 }
