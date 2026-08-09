@@ -13,6 +13,7 @@
 
 <script>
   const GH_ICON = `<svg class="gh-logo" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.4-.5-1.6.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.5.3.9 1 .9 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>`;
+  const LOCK_ICON = `<svg class="gh-lock" viewBox="0 0 16 16" fill="currentColor" width="9" height="9" aria-hidden="true"><path d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H4a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 4 15h8a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 12 6h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/></svg>`;
 
   // Colores por lenguaje (aprox. a los de GitHub)
   const LANG_COLORS: Record<string, string> = {
@@ -32,6 +33,50 @@
     return `hace ${Math.floor(diff / 31536000)} a`;
   }
 
+  /** Nivel 0-4 para el color de la celda, en la escala de GitHub. */
+  function heatLevel(count: number): number {
+    if (count <= 0) return 0;
+    if (count <= 2) return 1;
+    if (count <= 5) return 2;
+    if (count <= 10) return 3;
+    return 4;
+  }
+
+  /**
+   * Franja de actividad. Existe para que el widget no parezca abandonado cuando
+   * el trabajo reciente ocurre en repos privados: el calendario de GitHub los
+   * cuenta, así que el pulso es real aunque la lista de proyectos no se mueva.
+   */
+  function activityStrip(a: any): string {
+    if (!a || !Array.isArray(a.weeks) || a.weeks.length === 0) return '';
+
+    const lastWeek = a.weeks.length - 1;
+    const cells = a.weeks.map((week: number[], i: number) => {
+      // La semana en curso llega incompleta (y la primera puede empezar a media
+      // semana): se rellena con huecos para que la rejilla no se descuadre.
+      const pad = '<span class="gh-hm-day gh-hm-pad"></span>'.repeat(7 - week.length);
+      const days = week.map((count) =>
+        `<span class="gh-hm-day" data-level="${heatLevel(count)}"></span>`
+      ).join('');
+      return `<span class="gh-hm-week">${i === lastWeek ? days + pad : pad + days}</span>`;
+    }).join('');
+
+    const month = a.last30Days ?? 0;
+    const year = a.lastYear ?? 0;
+    const label = month === 1 ? '1 contribución' : `${month} contribuciones`;
+    const streak = a.streak > 1 ? `<span class="gh-streak">${a.streak} días seguidos</span>` : '';
+
+    return `
+      <div class="gh-activity">
+        <div class="gh-activity-top">
+          <span class="gh-activity-count">${label} <span class="gh-activity-range">en 30 días</span></span>
+          ${streak}
+        </div>
+        <div class="gh-heatmap" role="img" aria-label="${year} contribuciones en el último año, ${month} en los últimos 30 días">${cells}</div>
+      </div>
+    `;
+  }
+
   function escapeHtml(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
@@ -45,18 +90,21 @@
       const data = await response.json();
       const repos = data.repos ?? [];
       const profile = data.profile;
+      const strip = activityStrip(data.activity);
 
       const header = profile
         ? `<div class="last-label gh-header">${GH_ICON}<span>Proyectos en GitHub</span><span class="gh-stats">${profile.publicRepos} repos · ${profile.followers} seguidores</span></div>`
         : `<div class="last-label">Proyectos en GitHub</div>`;
 
       if (!Array.isArray(repos) || repos.length === 0) {
-        card.innerHTML = `${header}<p style="color:var(--text-muted);font-size:13px;">Sin repos públicos.</p>`;
+        card.innerHTML = `${header}${strip}<p style="color:var(--text-muted);font-size:13px;">Sin repos públicos.</p>`;
         return;
       }
 
       const rows = repos.map((r: any) => {
         const meta = [];
+        // Los privados no llevan enlace (daría 404): se marcan y se quedan en <div>.
+        if (r.isPrivate) meta.push(`<span class="gh-private">${LOCK_ICON}privado</span>`);
         if (r.isContribution && r.owner) {
           meta.push(`<span class="gh-org">${escapeHtml(r.owner)}</span>`);
         }
@@ -69,19 +117,20 @@
           ? `<div class="track-artist gh-meta">${meta.join('')}</div>`
           : (r.description ? `<div class="track-artist">${escapeHtml(r.description)}</div>` : '');
 
-        return `
-          <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="track-item" style="text-decoration:none;">
+        const body = `
             <div class="gh-commit-icon">${GH_ICON}</div>
             <div class="track-info">
               <div class="track-title">${escapeHtml(r.name)}</div>
               ${sub}
             </div>
-            <span class="track-time">${timeAgo(r.pushedAt)}</span>
-          </a>
-        `;
+            <span class="track-time">${timeAgo(r.pushedAt)}</span>`;
+
+        return r.url
+          ? `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="track-item" style="text-decoration:none;">${body}</a>`
+          : `<div class="track-item track-item-static">${body}</div>`;
       }).join('');
 
-      card.innerHTML = `${header}<div class="track-list">${rows}</div>`;
+      card.innerHTML = `${header}${strip}<div class="track-list">${rows}</div>`;
     } catch {
       const card2 = document.getElementById('github-card');
       if (card2) card2.innerHTML = `

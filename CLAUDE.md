@@ -108,12 +108,27 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 
 ### Integración con GitHub (endpoint SSR)
 - `github-activity.ts` devuelve los 5 proyectos en los que **has trabajado/contribuido** más recientemente (nombre, owner, lenguaje, estrellas, fecha, si es contribución) + `{publicRepos, followers}`.
-- **Fuentes en cascada (de mejor a peor):**
-  1. **Contribuciones (GraphQL, requiere `GITHUB_TOKEN`)** — `contributionsCollection.commitContributionsByRepository` del **último año**. Es la fuente principal: incluye contribuciones a **repos de organizaciones** (p. ej. `Galactic-AIMA/*`) aunque tu último commit sea de hace meses. Ordena por la fecha de tu última contribución en cada repo.
-  2. **Actividad pública (`/users/{user}/events/public`)** — fallback si no hay token o GraphQL falla. Solo cubre ~90 días / los últimos ~300 eventos, así que se queda corto (no ve contribuciones antiguas).
-  3. **Repos propios (`/repos?sort=pushed&type=owner`)** — relleno para completar hasta 5 si las fuentes anteriores devuelven menos, sin duplicar.
+- **Dos fuentes que se mezclan** (`mergeByRecency()`), porque son complementarias y **ninguna basta sola**:
+  1. **Contribuciones (GraphQL, requiere `GITHUB_TOKEN`)** — `contributionsCollection.commitContributionsByRepository` del **último año**. La única que ve **repos de organizaciones** (p. ej. `Galactic-AIMA/*`) aunque tu último commit sea de hace meses. **No ve los privados** (ver abajo).
+  2. **Repos propios (`/user/repos?affiliation=owner`)** — la única que ve los **privados**. Ordena por `pushed_at`.
+  - Un repo presente en ambas conserva los metadatos más ricos (GraphQL trae descripción) y la **fecha más reciente** de las dos; `pushed_at` es exacto y el `occurredAt` de GraphQL viene redondeado al día.
+  - Se piden `LIMIT * 3` de cada una para que la mezcla tenga material, y se recorta a 5 al final.
+- **Fallback:** si GraphQL viene vacío (sin token o caído) entra la **actividad pública** (`/users/{user}/events/public`), que solo cubre ~90 días / ~300 eventos.
+- ⚠️ **No convertir esto otra vez en una cascada con `reposFromOwned` de relleno.** Fue el bug original: al usarse solo "si faltan repos para llegar a 5", y devolver GraphQL siempre 5, la rama de los privados no se ejecutaba nunca.
 - **Decisión de diseño:** se muestran *proyectos recientes / contribuciones*, NO un feed de commits.
 - `GITHUB_TOKEN`: **necesario** para la fuente de contribuciones (GraphQL no funciona sin auth). Sin token todo sigue funcionando pero degradado a la actividad pública/repos propios (no muestra contribuciones antiguas como SignalFactoryApp). También sube el rate limit (~60→~5000 req/h). `GitHubCard.astro` refresca cada 10 min. **Debe estar configurado en Vercel.**
+
+#### Repos privados
+- El endpoint los incluye, pero **solo si el `GITHUB_TOKEN` tiene el scope `repo`**. Con un PAT sin scopes GitHub responde 200 y los omite en silencio — no hay error que delate el problema. Comprobar con `curl -sI -H "Authorization: Bearer $TOKEN" https://api.github.com/user | grep x-oauth-scopes`.
+- 🚫 **GraphQL nunca devuelve los repos privados**, ni con scope `repo` ni consultándote a ti mismo. Los agrega anónimamente en `restrictedContributionsCount` porque el perfil tiene apagado *Settings → Profile → "Include private contributions on my profile"*. **Verificado 2026-08-09** con un token con scope `repo`: REST devolvía `private=true` para `ciro_finanzas`, y la misma consulta por GraphQL seguía listando solo repos públicos con `restricted: 80`. Por eso los privados **tienen que venir de REST** (`/user/repos`).
+- De un repo privado solo sale el **nombre, el lenguaje y la fecha**. `redactIfPrivate()` borra descripción, URL y estrellas **en el servidor**, para que no viajen al cliente. La tarjeta los pinta como `<div>` sin enlace (daría 404) con una etiqueta 🔒 "privado".
+- `reposFromOwned()` usa `/user/repos?affiliation=owner` cuando hay token (incluye privados) y `/users/{user}/repos` cuando no. Es la única vía para un repo privado cuyos commits **no te atribuye GitHub** — p. ej. los generados por bots tipo Lovable (`lovable-dev[bot]`) o Emergent (`emergent-agent-e1`), que no cuentan como contribución tuya y por tanto nunca salen por GraphQL.
+
+#### Franja de actividad (heatmap)
+- Sobre la lista de repos hay un **heatmap del último año + contribuciones de los últimos 30 días + racha** (`fetchActivity()` → `activity` en la respuesta).
+- **Por qué existe:** la lista de proyectos se mueve solo cuando hay commits en repos *visibles*. Si el trabajo reciente está en repos privados, el widget parece abandonado sin estarlo (caso real 2026-08-09: último repo listado "hace 6d" mientras había **171 contribuciones en 30 días**, 80 de ellas privadas).
+- El `contributionCalendar` de GraphQL **ya incluye las contribuciones privadas** en los totales, sin revelar en qué repo. Por eso el heatmap funciona incluso con un token sin scope `repo`; `restrictedContributionsCount` da aparte cuántas son restringidas.
+- La semana en curso llega incompleta del API; `activityStrip()` la rellena con `.gh-hm-pad` para no descuadrar la rejilla.
 
 ### Recomendador de canciones (`song-search.ts` + `recommend-song.ts`)
 - `RecommendSongCard.astro` deja que un visitante busque una canción y la recomiende; se añade a una **playlist pública** de David y llega un aviso por **Telegram**.
@@ -138,7 +153,7 @@ Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 | `TELEGRAM_CHAT_ID` | No | Aviso de nueva recomendación |
 | `PSN_GIST_ID` | Sí (PS) | Gist del que el sitio lee la cache de PlayStation |
 | `GITHUB_USERNAME` | No | GitHub (default: `Davidciro-333`), también dueño del Gist |
-| `GITHUB_TOKEN` | No | GitHub (sube el rate limit) |
+| `GITHUB_TOKEN` | Recomendada | GitHub — sin él no hay contribuciones ni heatmap. Con scope `repo` incluye además los repos privados |
 
 **Secrets del repo de GitHub** (para el job `psn-cache`, se configuran con `gh secret set`):
 

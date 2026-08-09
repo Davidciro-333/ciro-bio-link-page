@@ -343,6 +343,53 @@ body {
 .gh-lang { display: inline-flex; align-items: center; gap: 4px; }
 .gh-lang-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .gh-star { font-variant-numeric: tabular-nums; }
+
+/* Franja de actividad: el pulso de commits, incluidos los de repos privados. */
+.gh-activity { margin: 2px 0 10px; }
+.gh-activity-top {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 6px; font-size: 11px; color: var(--text-muted);
+}
+.gh-activity-count { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; }
+.gh-activity-range { color: var(--text-muted); font-weight: 400; }
+.gh-streak {
+  margin-left: auto; flex-shrink: 0;
+  font-size: 9.5px; letter-spacing: 0.2px;
+  padding: 1px 6px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.gh-heatmap { display: flex; gap: 1.5px; width: 100%; }
+.gh-hm-week { display: flex; flex-direction: column; gap: 1.5px; flex: 1 1 0; min-width: 0; }
+.gh-hm-day {
+  display: block; width: 100%; aspect-ratio: 1;
+  border-radius: 1.5px;
+  background: color-mix(in oklab, var(--text) 7%, transparent);
+}
+.gh-hm-pad { background: transparent; }
+.gh-hm-day[data-level="1"] { background: color-mix(in oklab, var(--accent-a) 32%, transparent); }
+.gh-hm-day[data-level="2"] { background: color-mix(in oklab, var(--accent-a) 58%, transparent); }
+.gh-hm-day[data-level="3"] { background: color-mix(in oklab, var(--accent-a) 82%, transparent); }
+.gh-hm-day[data-level="4"] { background: var(--accent-c); }
+
+/* Repo privado: se muestra el nombre pero no enlaza a ningún sitio. */
+.track-item-static { cursor: default; }
+.track-item-static .gh-commit-icon,
+.track-item-static .track-title { opacity: 0.75; }
+.gh-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  color: var(--text-muted);
+  font-size: 9.5px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.gh-lock { flex-shrink: 0; opacity: 0.8; }
 .gh-org {
   display: inline-flex;
   align-items: center;
