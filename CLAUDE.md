@@ -117,6 +117,8 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 - ⚠️ **No convertir esto otra vez en una cascada con `reposFromOwned` de relleno.** Fue el bug original: al usarse solo "si faltan repos para llegar a 5", y devolver GraphQL siempre 5, la rama de los privados no se ejecutaba nunca.
 - **Decisión de diseño:** se muestran *proyectos recientes / contribuciones*, NO un feed de commits.
 - `GITHUB_TOKEN`: **necesario** para la fuente de contribuciones (GraphQL no funciona sin auth). Sin token todo sigue funcionando pero degradado a la actividad pública/repos propios (no muestra contribuciones antiguas como SignalFactoryApp). También sube el rate limit (~60→~5000 req/h). `GitHubCard.astro` refresca cada 10 min. **Debe estar configurado en Vercel.**
+- ⚠️ **Token caducado = widget vacío.** Si el `GITHUB_TOKEN` caduca o se revoca, GitHub responde **401 a todo** lo que lo lleve, incluso a endpoints públicos, y cada fuente volvía vacía ("Sin repos públicos"). Pasó en sept. 2026. Ahora `buildPayload()` detecta el 401, registra `GITHUB_TOKEN rechazado (401)` en los logs de Vercel y reintenta **sin token** (solo repos públicos, sin heatmap). Si el widget pierde los privados/heatmap, busca ese mensaje y renueva el token.
+- El endpoint memoiza la respuesta **5 min** por proceso, guarda el último estado con repos como fallback y devuelve `s-maxage=300`, por el límite de 60 req/h por IP sin token.
 
 #### Repos privados
 - El endpoint los incluye, pero **solo si el `GITHUB_TOKEN` tiene el scope `repo`**. Con un PAT sin scopes GitHub responde 200 y los omite en silencio — no hay error que delate el problema. Comprobar con `curl -sI -H "Authorization: Bearer $TOKEN" https://api.github.com/user | grep x-oauth-scopes`.
