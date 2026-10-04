@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farol v2 · David Ciro</title>
+<!--
+  Dirección elegida · FAROL v2
+  Base: Farol (2). Préstamos traducidos a su idioma, no copiados:
+  - De Memory Card (1): el borde que brilla -> luz de farol ámbar que "se acerca";
+    el ritmo lento que respira; el selector de tres entradas.
+  - De Cartucho (3): el texto que se escribe solo; la barra de vida -> hilo con gema.
+  - De Lado B (4): el @handle junto al retrato.
+  Regla: una sola estética. Nada de pixel, nada de blur de cristal, nada de azul.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d11;
+    --surface: #11141a;
+    --ink-line: rgba(235, 229, 213, 0.11);
+    --text: #ebe5d5;
+    --muted: #98a0aa;
+    --lamp: #e6b85c;
+    --lamp-rgb: 230, 184, 92;
+    /* Luz de farol: el "borde brillante" de Memory Card en clave cálida */
+    --glow: 0 0 0 1px rgba(var(--lamp-rgb), 0.55), 0 0 22px rgba(var(--lamp-rgb), 0.16), inset 0 0 18px rgba(var(--lamp-rgb), 0.06);
+    --ease: cubic-bezier(0.25, 1, 0.5, 1);
+    --slow: 0.7s;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); }
+  body { font-family: 'Alegreya Sans', system-ui, sans-serif; color: var(--text); background: var(--bg);
+    min-height: 100dvh; -webkit-font-smoothing: antialiased; font-size: 16px; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; }
+
+  #dust { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .mist { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(70% 38% at 50% 100%, rgba(111, 130, 150, 0.16), transparent 70%); }
+
+  .wrap { position: relative; z-index: 1; max-width: 460px; margin: 0 auto; padding: 60px 22px 72px; }
+
+  /* ── Retrato con farol que respira ── */
+  .hero { text-align: center; }
+  .portrait { width: 116px; height: 116px; margin: 0 auto; position: relative; }
+  .portrait::before { content: ''; position: absolute; inset: -60px; border-radius: 50%; z-index: -1;
+    background: radial-gradient(circle, rgba(var(--lamp-rgb), 0.22), transparent 62%);
+    animation: breathe 7s ease-in-out infinite; }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;
+    filter: saturate(0.78) contrast(1.05); box-shadow: 0 0 0 1px rgba(235,229,213,.35), 0 0 0 7px var(--bg), 0 0 0 8px var(--ink-line); }
+  .handle { display: inline-block; margin-top: 22px; font-size: 14px; color: var(--muted); letter-spacing: .04em; }
+  h1 { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 46px; line-height: 1; margin-top: 6px; }
+  .title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 20px; color: var(--muted); margin-top: 8px; }
+  .line { color: #d3ccbc; line-height: 1.6; margin: 16px auto 0; max-width: 32ch; min-height: 3.2em; }
+  .line .caret { display: inline-block; width: 1px; height: 1em; background: var(--lamp); vertical-align: -2px; margin-left: 2px; animation: caret 1s steps(2) infinite; }
+
+  .socials { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  .socials a { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--muted);
+    transition: color var(--slow) var(--ease), box-shadow var(--slow) var(--ease), transform var(--slow) var(--ease); }
+  .socials a:hover, .socials a:focus-visible { color: var(--lamp); box-shadow: var(--glow); transform: translateY(-2px); outline: none; }
+
+  .orn { display: block; margin: 30px auto 26px; width: 200px; height: 22px; color: var(--text); opacity: .55; }
+  .orn path { fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: round;
+    stroke-dasharray: 400; stroke-dashoffset: 400; animation: draw 2.4s var(--ease) .3s forwards; }
+  .orn .gem { fill: var(--lamp); stroke: none; opacity: 0; animation: glow-in 1s 1.8s forwards; }
+
+  /* ── Enlaces: texto centrado, sin cajas (como la v1) ── */
+  .links { display: grid; gap: 4px; text-align: center; }
+  .links a { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; padding: 8px 0;
+    display: inline-flex; align-items: center; justify-content: center; gap: 14px; transition: color .4s; }
+  .links a .mk { width: 7px; height: 7px; transform: rotate(45deg); border: 1px solid var(--muted); opacity: 0; transition: opacity .4s, background .4s, border-color .4s, box-shadow .4s; }
+  .links a:hover, .links a:focus-visible { color: var(--lamp); outline: none; }
+  .links a:hover .mk, .links a:focus-visible .mk { opacity: 1; background: var(--lamp); border-color: var(--lamp); box-shadow: 0 0 8px var(--lamp); }
+  .links a.main { font-style: italic; color: var(--lamp); }
+
+  /* ── Selector de entradas del diario (de Memory Card) ── */
+  .journal-h { display: flex; align-items: center; gap: 14px; margin-top: 54px; }
+  .journal-h h2 { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 28px; }
+  .journal-h::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--ink-line), transparent); }
+  .entries { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .entry-btn { appearance: none; border: 0; cursor: pointer; text-align: left; border-radius: 6px; padding: 14px 12px;
+    background: var(--surface); box-shadow: 0 0 0 1px var(--ink-line);
+    display: flex; flex-direction: column; gap: 10px; min-height: 104px;
+    transition: box-shadow var(--slow) var(--ease), transform var(--slow) var(--ease), background var(--slow); }
+  .entry-btn .ic { color: var(--muted); transition: color var(--slow); }
+  .entry-btn b { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 600; line-height: 1; }
+  .entry-btn small { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .entry-btn:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(var(--lamp-rgb), .3); }
+  .entry-btn[aria-selected="true"] { box-shadow: var(--glow); transform: translateY(-3px);
+    background: linear-gradient(180deg, rgba(var(--lamp-rgb), .08), var(--surface)); }
+  .entry-btn[aria-selected="true"] .ic { color: var(--lamp); }
+  .entry-btn:focus-visible { outline: 1px dashed var(--lamp); outline-offset: 4px; }
+
+  .page { margin-top: 22px; }
+  .page[hidden] { display: none; }
+  .page.turn { animation: turn .9s var(--ease); }
+
+  /* Elementos compartidos */
+  .state { font-size: 13px; color: var(--lamp); display: inline-flex; gap: 8px; align-items: center; font-weight: 500; letter-spacing: .02em; }
+  .state i { width: 6px; height: 6px; border-radius: 50%; background: var(--lamp); box-shadow: 0 0 10px var(--lamp); animation: flicker 3.2s infinite; }
+  .feature { display: grid; grid-template-columns: 96px 1fr; gap: 18px; align-items: center; }
+  .feature img { width: 96px; height: 96px; object-fit: cover; border-radius: 4px; display: block; box-shadow: 0 0 0 1px var(--ink-line), 0 18px 40px rgba(0,0,0,0.5); }
+  .feature h3 { font-family: 'Cormorant Garamond', serif; font-size: 25px; font-weight: 600; line-height: 1.1; margin-top: 6px; }
+  .feature p { color: var(--muted); }
+  .min { min-width: 0; }
+
+  /* Hilo con gema (la barra de vida de Cartucho, en clave Farol) */
+  .thread { height: 1px; background: var(--ink-line); margin-top: 18px; position: relative; }
+  .thread span { position: absolute; left: 0; top: 0; height: 1px; background: linear-gradient(90deg, rgba(var(--lamp-rgb), .2), var(--lamp)); transition: width 1s linear; }
+  .thread span::after { content: ''; position: absolute; right: -4px; top: -4px; width: 8px; height: 8px; background: var(--lamp); transform: rotate(45deg); box-shadow: 0 0 12px var(--lamp); }
+  .times { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+
+  .switch { display: flex; gap: 22px; margin-top: 24px; }
+  .switch button { appearance: none; background: none; border: 0; color: var(--muted); font-size: 15px; cursor: pointer; padding: 4px 0;
+    border-bottom: 1px solid transparent; transition: color .4s, border-color .4s; }
+  .switch button[aria-selected="true"] { color: var(--text); border-color: var(--lamp); }
+
+  .note { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; padding: 11px 8px; margin: 0 -8px; border-radius: 6px;
+    transition: box-shadow var(--slow) var(--ease), background var(--slow); }
+  .note + .note { border-top: 1px solid var(--ink-line); }
+  .note:hover { box-shadow: var(--glow); border-top-color: transparent; }
+  .note:hover + .note { border-top-color: transparent; }
+  .note img { width: 44px; height: 44px; border-radius: 3px; object-fit: cover; display: block; filter: saturate(.85); }
+  .note .t { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .note .s { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .note .m { color: var(--muted); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 16px; white-space: nowrap; }
+
+  .ask { margin-top: 26px; padding: 20px; border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 1px var(--ink-line);
+    transition: box-shadow var(--slow) var(--ease); }
+  .ask:focus-within { box-shadow: var(--glow); }
+  .ask label { font-family: 'Cormorant Garamond', serif; font-size: 23px; font-weight: 600; display: block; }
+  .ask p { color: var(--muted); margin-top: 4px; font-size: 15px; }
+  .ask input { width: 100%; margin-top: 14px; background: transparent; border: 0; border-bottom: 1px solid var(--muted);
+    color: var(--text); font: inherit; padding: 10px 2px; transition: border-color .4s; }
+  .ask input::placeholder { color: var(--muted); }
+  .ask input:focus { outline: none; border-color: var(--lamp); }
+
+  /* ── Juegos: reliquias circulares (como la v1); al pasar, el anillo se enciende ── */
+  .relics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 22px; }
+  .relics figure { margin: 0; text-align: center; }
+  .relics img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 50%; display: block;
+    box-shadow: 0 0 0 1px var(--ink-line), 0 0 0 5px var(--bg), 0 0 0 6px var(--ink-line); filter: saturate(.8);
+    transition: filter var(--slow), transform var(--slow) var(--ease), box-shadow var(--slow) var(--ease); }
+  .relics figure:hover img { filter: saturate(1.1); transform: translateY(-3px);
+    box-shadow: 0 0 0 1px var(--ink-line), 0 0 0 5px var(--bg), 0 0 0 6px rgba(var(--lamp-rgb), .7), 0 0 22px rgba(var(--lamp-rgb), .2); }
+  .relics figcaption { font-size: 13px; margin-top: 10px; line-height: 1.3; }
+  .relics figcaption small { display: block; color: var(--muted); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 15px; }
+
+  /* ── Código ── */
+  .count { display: flex; align-items: baseline; gap: 12px; }
+  .count b { font-family: 'Cormorant Garamond', serif; font-size: 54px; font-weight: 500; line-height: 1; color: var(--lamp); text-shadow: 0 0 24px rgba(var(--lamp-rgb), .35); }
+  .count span { color: var(--muted); line-height: 1.4; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; margin-top: 18px; }
+  .heat i { aspect-ratio: 1; border-radius: 50%; background: rgba(235,229,213,0.06); }
+  .heat i[data-l="1"] { background: rgba(var(--lamp-rgb),0.25); }
+  .heat i[data-l="2"] { background: rgba(var(--lamp-rgb),0.45); }
+  .heat i[data-l="3"] { background: rgba(var(--lamp-rgb),0.7); }
+  .heat i[data-l="4"] { background: var(--lamp); box-shadow: 0 0 6px rgba(var(--lamp-rgb),.6); }
+  .repo { display: block; padding: 14px 10px; margin: 0 -10px; border-radius: 6px; transition: box-shadow var(--slow) var(--ease); }
+  .repo + .repo { border-top: 1px solid var(--ink-line); }
+  a.repo:hover { box-shadow: var(--glow); }
+  .repo .n { display: flex; justify-content: space-between; gap: 12px; font-weight: 500; }
+  .repo .tag { color: var(--muted); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 16px; }
+  .repo .d { color: var(--muted); font-size: 15px; margin-top: 4px; line-height: 1.5; }
+
+  footer { margin-top: 56px; color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; }
+  footer a:hover { color: var(--lamp); }
+
+  @keyframes breathe { 0%, 100% { opacity: .65; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes glow-in { to { opacity: 1; } }
+  @keyframes caret { 50% { opacity: 0; } }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 45% { opacity: .55; } 50% { opacity: .9; } 55% { opacity: .6; } }
+  @keyframes appear { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
+  @keyframes turn { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } }
+  .appear { animation: appear 1.2s var(--ease) both; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+    .orn path { stroke-dashoffset: 0; } .orn .gem { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<canvas id="dust" aria-hidden="true"></canvas>
+<div class="mist" aria-hidden="true"></div>
+
+<main class="wrap">
+  <header class="hero">
+    <div class="portrait appear"><img src="assets/avatar-sm.jpg" alt="David Ciro"></div>
+    <span class="handle appear" style="animation-delay:.15s">@itsciro.me</span>
+    <h1 class="appear" style="animation-delay:.22s" id="name"></h1>
+    <p class="title appear" style="animation-delay:.3s" id="title"></p>
+    <p class="line appear" style="animation-delay:.38s"><span id="line" aria-live="polite"></span><span class="caret" id="caret"></span></p>
+    <nav class="socials appear" style="animation-delay:.46s" id="socials" aria-label="Redes"></nav>
+  </header>
+
+  <svg class="orn" viewBox="0 0 220 22" aria-hidden="true">
+    <path d="M2 11 H86 C94 11 96 4 103 4 M218 11 H134 C126 11 124 4 117 4"/>
+    <path d="M86 11 C94 11 98 18 104 18 M134 11 C126 11 122 18 116 18"/>
+    <rect class="gem" x="106" y="7" width="8" height="8" transform="rotate(45 110 11)"/>
+  </svg>
+
+  <nav class="links appear" style="animation-delay:.55s" id="links" aria-label="Enlaces"></nav>
+
+  <section aria-labelledby="h-diario">
+    <div class="journal-h"><h2 id="h-diario">Mi diario</h2></div>
+    <div class="entries" role="tablist" id="entries"></div>
+    <div class="page turn" id="p-musica" role="tabpanel"></div>
+    <div class="page" id="p-juegos" role="tabpanel" hidden></div>
+    <div class="page" id="p-codigo" role="tabpanel" hidden></div>
+  </section>
+
+  <footer><a href="#">Política de privacidad</a><span>Datos en vivo: ejemplo</span></footer>
+</main>
+
+<script src="assets/data.js"></script>
+<script>
+  const D = window.CIRO, U = window.CIRO_UTIL, $ = (id) => document.getElementById(id);
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('name').textContent = D.profile.name;
+  $('title').textContent = D.profile.title;
+  $('socials').innerHTML = D.socials.map(s => `<a href="${s.url}" aria-label="${s.name}">${U.icon(s.name, 17)}</a>`).join('');
+  $('links').innerHTML = D.links.map((l, i) => `<a href="${l.url}" class="${i === 0 ? 'main' : ''}"><span class="mk"></span>${l.title}<span class="mk"></span></a>`).join('');
+
+  // La frase se escribe sola (de Cartucho), con cursor de pluma en vez de ▼.
+  const msg = D.profile.line, line = $('line');
+  if (still) { line.textContent = msg; $('caret').remove(); }
+  else { let i = 0; setTimeout(function w() { line.textContent = msg.slice(0, ++i); if (i < msg.length) setTimeout(w, 38 + Math.random() * 40); }, 1100); }
+
+  const entries = [
+    { id: 'musica', name: 'Música', meta: 'sonando ahora', icon: U.icon('Spotify', 18) },
+    { id: 'juegos', name: 'Juegos', meta: 'jugando ahora', icon: U.icon('PlayStation', 18) },
+    { id: 'codigo', name: 'Código', meta: `${D.github.last30} este mes`, icon: U.icon('GitHub', 18) },
+  ];
+  $('entries').innerHTML = entries.map((e, i) => `
+    <button class="entry-btn" role="tab" aria-selected="${i === 0}" aria-controls="p-${e.id}" data-id="${e.id}">
+      <span class="ic">${e.icon}</span><span><b>${e.name}</b><small>${e.meta}</small></span></button>`).join('');
+
+  // Música
+  const np = D.nowPlaying;
+  const notes = (items, meta) => items.map(t => `<div class="note"><img src="${t.cover}" alt="">
+    <div class="min"><div class="t">${t.title}</div><div class="s">${t.artist ?? t.sub}</div></div><span class="m">${meta(t)}</span></div>`).join('');
+  $('p-musica').innerHTML = `
+    <div class="feature"><img src="${np.cover}" alt="${np.album}">
+      <div class="min"><span class="state"><i></i>Sonando ahora</span><h3>${np.title}</h3><p>${np.artist}</p></div></div>
+    <div class="thread"><span id="thread"></span></div>
+    <div class="times"><span id="t-now"></span><span>${U.fmt(np.durationMs)}</span></div>
+    <div class="switch" role="tablist">
+      <button role="tab" aria-selected="true" data-l="recent">Últimas</button>
+      <button role="tab" aria-selected="false" data-l="top">Más escuchados del mes</button>
+    </div>
+    <div id="notes" style="margin-top:8px">${notes(D.recent, t => U.ago(t.at))}</div>
+    <div class="ask"><label for="ask">Déjame una canción</label>
+      <p>Búscala y la guardo en mi playlist. A ver qué me descubres.</p>
+      <input id="ask" type="search" placeholder="Canción o artista"></div>`;
+  let pos = np.progressMs;
+  const tick = () => { $('thread').style.width = (pos / np.durationMs) * 100 + '%'; $('t-now').textContent = U.fmt(pos); };
+  tick(); if (!still) setInterval(() => { pos = Math.min(pos + 1000, np.durationMs); tick(); }, 1000);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-l]'); if (!b) return;
+    document.querySelectorAll('[data-l]').forEach(x => x.setAttribute('aria-selected', x === b));
+    $('notes').innerHTML = b.dataset.l === 'top' ? notes(D.topMonth.items, () => '') : notes(D.recent, t => U.ago(t.at));
+  });
+
+  // Juegos
+  const g = D.nowGaming;
+  $('p-juegos').innerHTML = `
+    <div class="feature"><img src="${g.cover}" alt="">
+      <div class="min"><span class="state"><i></i>Jugando ahora</span><h3>${g.title}</h3><p>${g.platform}, desde hace ${g.since}</p></div></div>
+    <div class="relics">${D.games.map(x => `<figure><img src="${x.cover}" alt=""><figcaption>${x.title}<small>${U.ago(x.at)}</small></figcaption></figure>`).join('')}</div>`;
+
+  // Código
+  $('p-codigo').innerHTML = `
+    <div class="count"><b>${D.github.last30}</b><span>contribuciones este mes,<br>racha de ${D.github.streak} días</span></div>
+    <div class="heat">${U.heatmap(26).flat().map(l => `<i data-l="${l}"></i>`).join('')}</div>
+    <div style="margin-top:14px">${D.repos.map(r => r.private
+      ? `<div class="repo"><div class="n"><span>${r.name}</span><span class="tag">privado</span></div></div>`
+      : `<a class="repo" href="#"><div class="n"><span>${r.name}</span><span class="tag">${r.lang}</span></div>${r.desc ? `<div class="d">${r.desc}</div>` : ''}</a>`).join('')}</div>`;
+
+  // Pasar de página del diario
+  document.querySelectorAll('.entry-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.entry-btn').forEach(b => b.setAttribute('aria-selected', b === btn));
+    document.querySelectorAll('.page').forEach(p => {
+      const on = p.id === 'p-' + btn.dataset.id; p.hidden = !on;
+      if (on) { p.classList.remove('turn'); void p.offsetWidth; p.classList.add('turn'); }
+    });
+  }));
+
+  // Polvo que cae despacio; algunas motas cálidas, como chispas del farol.
+  const cv = $('dust'), ctx = cv.getContext('2d');
+  let W, H, motes = [];
+  function setup() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr;
+    motes = Array.from({ length: 44 }, () => ({ x: Math.random() * W, y: Math.random() * H,
+      r: (0.6 + Math.random() * 1.6) * dpr, v: (0.07 + Math.random() * 0.22) * dpr,
+      sway: Math.random() * Math.PI * 2, a: 0.15 + Math.random() * 0.45, warm: Math.random() < 0.3 }));
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (const m of motes) {
+      m.y += m.v; m.sway += 0.01; m.x += Math.sin(m.sway) * 0.15;
+      if (m.y > H + 4) { m.y = -4; m.x = Math.random() * W; }
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+      ctx.fillStyle = m.warm ? `rgba(230,184,92,${m.a})` : `rgba(235,229,213,${m.a * 0.7})`;
+      ctx.fill();
+    }
+    if (!still) requestAnimationFrame(draw);
+  }
+  setup(); draw();
+  addEventListener('resize', () => { setup(); if (still) draw(); });
+</script>
+</body>
+</html>

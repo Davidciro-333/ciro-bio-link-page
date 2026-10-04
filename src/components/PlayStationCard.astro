@@ -1,82 +1,77 @@
 ---
+/**
+ * Lo que juego ahora en PlayStation. Los datos vienen de la cache del Gist
+ * (ver CLAUDE.md), así que tienen como mucho ~15 min de retraso.
+ */
 ---
 
-<div id="playstation-card" class="widget widget-now">
-  <div class="now-row">
-    <div class="now-cover-placeholder">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h4m-2-2v4"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/><rect x="2" y="6" width="20" height="12" rx="4"/></svg>
-    </div>
-    <div class="now-info">
-      <div class="now-badge">
-        <svg class="ps-logo" viewBox="0 0 24 24" fill="#0070d1"><path d="M9.5 3.5v13.7l2.6.8V6.1c0-.6.3-1 .7-.9.6.1.7.7.7 1.2v4.5c1.6.8 2.9-.1 2.9-2.2 0-2.2-.8-3.2-3-4C12.3 4.3 10.8 3.9 9.5 3.5zM14 17.9l4.2-1.5c.5-.2.6-.4.2-.6-.4-.2-1.1-.2-1.6-.1L14 16.8v-1.4l.2-.1s1.9-.7 4.5-.9c1.3.1 2.9.2 4.1.7 1.4.5.5 1.4-.1 1.7L14 19.6zM2.3 17.6c-1.4-.4-1.6-1.2-1-1.7.6-.4 1.5-.7 1.5-.7l3.9-1.4v1.6l-2.8 1c-.5.2-.6.4-.2.6.4.2 1.1.2 1.6.1l1.4-.5v1.4c-1.4.3-3 .2-4.4-.4z"/></svg>
-        <span class="now-badge-text">Cargando...</span>
-      </div>
-      <div class="now-title" style="color: var(--text-muted); font-size: 13px;">Conectando con PlayStation</div>
+<div id="playstation-card" aria-live="polite">
+  <div class="feature" aria-busy="true">
+    <span class="feature-cover sk"></span>
+    <div>
+      <span class="sk sk-line" style="display:block;width:40%"></span>
+      <span class="sk sk-line" style="display:block;width:70%;height:20px;margin-top:10px"></span>
+      <span class="sk sk-line" style="display:block;width:50%;margin-top:10px"></span>
     </div>
   </div>
 </div>
 
 <script>
-  const PS_LOGO = `<svg class="ps-logo" viewBox="0 0 24 24" fill="#0070d1"><path d="M9.5 3.5v13.7l2.6.8V6.1c0-.6.3-1 .7-.9.6.1.7.7.7 1.2v4.5c1.6.8 2.9-.1 2.9-2.2 0-2.2-.8-3.2-3-4C12.3 4.3 10.8 3.9 9.5 3.5zM14 17.9l4.2-1.5c.5-.2.6-.4.2-.6-.4-.2-1.1-.2-1.6-.1L14 16.8v-1.4l.2-.1s1.9-.7 4.5-.9c1.3.1 2.9.2 4.1.7 1.4.5.5 1.4-.1 1.7L14 19.6zM2.3 17.6c-1.4-.4-1.6-1.2-1-1.7.6-.4 1.5-.7 1.5-.7l3.9-1.4v1.6l-2.8 1c-.5.2-.6.4-.2.6.4.2 1.1.2 1.6.1l1.4-.5v1.4c-1.4.3-3 .2-4.4-.4z"/></svg>`;
+  import { escapeHtml, setEntryMeta, ICONS } from '../lib/client';
 
-  async function setPlayStation() {
-    const card = document.getElementById('playstation-card');
+  const card = document.getElementById('playstation-card');
+  let current = '';
+
+  async function load() {
     if (!card) return;
-
     try {
-      const response = await fetch('/api/psn-now-playing?ts=' + Date.now());
-      const data = await response.json();
+      const res = await fetch('/api/psn-now-playing?ts=' + Date.now());
+      const data = await res.json();
+
+      let key: string;
+      let html: string;
 
       if (data.isPlaying) {
+        setEntryMeta('juegos', 'jugando ahora');
+        key = `play|${data.title}`;
         const cover = data.imageUrl
-          ? `<img class="now-cover" src="${data.imageUrl}" alt="${data.title ?? ''}" width="52" height="52" loading="lazy" />`
-          : `<div class="now-cover-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="4"/></svg></div>`;
-
-        card.innerHTML = `
-          <div class="now-row">
+          ? `<img class="feature-cover" src="${escapeHtml(data.imageUrl)}" alt="" width="96" height="96" />`
+          : `<span class="feature-cover is-empty">${ICONS.pad}</span>`;
+        html = `
+          <div class="feature">
             ${cover}
-            <div class="now-info">
-              <div class="now-badge">
-                ${PS_LOGO}
-                <div class="sp-dot"></div>
-                <span class="now-badge-text">Jugando ahora</span>
-              </div>
-              <div class="now-title">${data.title}</div>
-              <div class="now-artist">${data.gamePlatform ?? data.platform ?? 'PlayStation'}</div>
+            <div class="min">
+              <span class="state"><span class="flame"></span>Jugando ahora</span>
+              <p class="feature-title">${escapeHtml(data.title)}</p>
+              <p class="feature-sub">${escapeHtml(data.gamePlatform ?? data.platform ?? 'PlayStation')}</p>
             </div>
-            <div class="now-right">
-              <div class="equalizer">
-                <div class="eq-bar" style="--h:8px;--sp:0.7s;--dl:0s"></div>
-                <div class="eq-bar" style="--h:14px;--sp:0.9s;--dl:0.1s"></div>
-                <div class="eq-bar" style="--h:10px;--sp:0.6s;--dl:0.2s"></div>
-                <div class="eq-bar" style="--h:16px;--sp:1.1s;--dl:0.05s"></div>
-              </div>
-            </div>
-          </div>
-        `;
+          </div>`;
       } else {
-        const statusText = data.isOnline ? 'En línea' : 'Desconectado';
-        card.innerHTML = `
-          <div class="now-row">
-            <div class="now-cover-placeholder">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 12h4m-2-2v4"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/><rect x="2" y="6" width="20" height="12" rx="4"/></svg>
+        const online = Boolean(data.isOnline);
+        setEntryMeta('juegos', online ? 'en línea' : 'desconectado');
+        key = `idle|${online}`;
+        html = `
+          <div class="feature">
+            <span class="feature-cover is-empty">${ICONS.pad}</span>
+            <div class="min">
+              <span class="state${online ? '' : ' is-idle'}">${online ? '<span class="flame"></span>En línea' : 'PlayStation'}</span>
+              <p class="feature-title">Ahora no estoy jugando</p>
+              <p class="feature-sub">Abajo, mis últimas partidas.</p>
             </div>
-            <div class="now-info">
-              <div class="now-badge">
-                ${PS_LOGO}
-                <span class="now-badge-text">PlayStation</span>
-              </div>
-              <div class="now-title" style="color: var(--text-muted);">No estoy jugando · ${statusText}</div>
-            </div>
-          </div>
-        `;
+          </div>`;
+      }
+
+      if (key !== current) {
+        current = key;
+        card.innerHTML = html;
       }
     } catch {
-      const card2 = document.getElementById('playstation-card');
-      if (card2) card2.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">No se pudo cargar PlayStation.</p>`;
+      current = '';
+      setEntryMeta('juegos', 'PlayStation');
+      card.innerHTML = `<p class="note">No pude leer PlayStation ahora mismo.</p>`;
     }
   }
 
-  setPlayStation();
-  setInterval(setPlayStation, 60000);
+  load();
+  setInterval(load, 60000);
 </script>

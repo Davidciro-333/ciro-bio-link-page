@@ -2,9 +2,9 @@
 import Layout from "../layouts/Layout.astro";
 import { Image } from "astro:assets";
 import profilePic from "../assets/profile-pic.png";
-import ThemeToggle from "../components/ThemeToggle.astro";
 import SocialIcons from "../components/SocialIcons.astro";
 import LinkButton from "../components/LinkButton.astro";
+import Journal from "../components/Journal.astro";
 import designSystem from "../../profile_design_system.json";
 import SpotifyCard from "../components/SpotifyCard.astro";
 import RecentlyPlayedCard from "../components/RecentlyPlayedCard.astro";
@@ -28,53 +28,84 @@ const showPlayStation =
 const showRecommend = Boolean(
   process.env.SPOTIFY_PLAYLIST_ID ?? import.meta.env.SPOTIFY_PLAYLIST_ID
 );
+
+const icon = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+const ICON_SPOTIFY = icon('M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z');
+const ICON_PS = icon('M9.5 3.5v13.7l2.6.8V6.1c0-.6.3-1 .7-.9.6.1.7.7.7 1.2v4.5c1.6.8 2.9-.1 2.9-2.2 0-2.2-.8-3.2-3-4C12.3 4.3 10.8 3.9 9.5 3.5zM14 17.9l4.2-1.5c.5-.2.6-.4.2-.6-.4-.2-1.1-.2-1.6-.1L14 16.8v-1.4l.2-.1s1.9-.7 4.5-.9c1.3.1 2.9.2 4.1.7 1.4.5.5 1.4-.1 1.7L14 19.6zM2.3 17.6c-1.4-.4-1.6-1.2-1-1.7.6-.4 1.5-.7 1.5-.7l3.9-1.4v1.6l-2.8 1c-.5.2-.6.4-.2.6.4.2 1.1.2 1.6.1l1.4-.5v1.4c-1.4.3-3 .2-4.4-.4z');
+const ICON_GH = icon('M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12');
+
+const entries = [
+  { id: 'musica' as const, name: 'Música', meta: 'Spotify', icon: ICON_SPOTIFY },
+  ...(showPlayStation ? [{ id: 'juegos' as const, name: 'Juegos', meta: 'PlayStation', icon: ICON_PS }] : []),
+  { id: 'codigo' as const, name: 'Código', meta: 'GitHub', icon: ICON_GH },
+];
 ---
 
-<Layout title="David">
-  <ThemeToggle />
-
-  <div class="page-container">
-    <div class="profile">
-      <div class="avatar-wrap">
-        <div class="avatar-ring"></div>
-        <div class="avatar-ring-mask"></div>
-        <div class="avatar-img-wrap">
-          <Image
-            src={profilePic}
-            alt={profile.name}
-            width={92}
-            height={92}
-            loading="eager"
-          />
-        </div>
+<Layout title="David Ciro">
+  <main class="page-container">
+    <header class="hero">
+      <div class="portrait appear">
+        <Image src={profilePic} alt={profile.name} width={116} height={116} densities={[1, 2]} loading="eager" />
       </div>
-      <h1 class="profile-name">{profile.name}</h1>
-      <p class="profile-title">{profile.title}</p>
-    </div>
+      <span class="handle appear" style="animation-delay:.08s">{profile.handle}</span>
+      <h1 class="profile-name appear" style="animation-delay:.14s">{profile.name}</h1>
+      <p class="profile-title appear" style="animation-delay:.2s">{profile.title}</p>
+      <p class="profile-line appear" style="animation-delay:.26s">
+        <span class="sr-only">{profile.line}</span><span id="profile-line" data-text={profile.line} aria-hidden="true">{profile.line}</span><span class="caret" aria-hidden="true"></span>
+      </p>
+      <div class="appear" style="animation-delay:.32s"><SocialIcons /></div>
+    </header>
 
-    <SocialIcons />
+    <svg class="ornament" viewBox="0 0 220 22" aria-hidden="true">
+      <path d="M2 11 H86 C94 11 96 4 103 4 M218 11 H134 C126 11 124 4 117 4" />
+      <path d="M86 11 C94 11 98 18 104 18 M134 11 C126 11 122 18 116 18" />
+      <rect class="gem" x="106" y="7" width="8" height="8" transform="rotate(45 110 11)" />
+    </svg>
 
-    <div class="links">
-      {mainLinks.map((link) => (
-        <LinkButton title={link.title} url={link.url} />
-      ))}
-    </div>
+    <nav class="links appear" style="animation-delay:.38s" aria-label="Enlaces">
+      {mainLinks.map((link, i) => <LinkButton title={link.title} url={link.url} main={i === 0} />)}
+    </nav>
 
-    <SpotifyCard />
-    <RecentlyPlayedCard />
-    {showRecommend && <RecommendSongCard />}
+    <Journal entries={entries}>
+      <Fragment slot="musica">
+        <SpotifyCard />
+        <RecentlyPlayedCard />
+        {showRecommend && <RecommendSongCard />}
+      </Fragment>
+      {showPlayStation && (
+        <Fragment slot="juegos">
+          <PlayStationCard />
+          <PlayStationRecentlyPlayedCard />
+        </Fragment>
+      )}
+      <Fragment slot="codigo">
+        <GitHubCard />
+      </Fragment>
+    </Journal>
 
-    {showPlayStation && (
-      <>
-        <PlayStationCard />
-        <PlayStationRecentlyPlayedCard />
-      </>
-    )}
-
-    <GitHubCard />
-
-    <div class="privacy">
+    <footer class="site-footer">
       <a href="/privacidad">Política de privacidad</a>
-    </div>
-  </div>
+    </footer>
+  </main>
 </Layout>
+
+<script>
+  // La frase se escribe sola, letra a letra, como a mano. El HTML ya la trae
+  // completa: sin JS, o con movimiento reducido, se queda tal cual.
+  const el = document.getElementById('profile-line');
+  const text = el?.dataset.text ?? '';
+  const caret = el?.nextElementSibling as HTMLElement | null;
+
+  if (el && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = '';
+    let i = 0;
+    const write = () => {
+      el.textContent = text.slice(0, ++i);
+      if (i < text.length) setTimeout(write, 38 + Math.random() * 40);
+      else setTimeout(() => caret?.remove(), 2400);
+    };
+    setTimeout(write, 700);
+  } else {
+    caret?.remove();
+  }
+</script>

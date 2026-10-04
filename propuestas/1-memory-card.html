@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Card · David Ciro</title>
+<!--
+  Dirección 1 · MEMORY CARD
+  Concepto: tu página como el navegador de la memory card de la PS2.
+  Las torres de luz del BIOS respiran al fondo; tus tres "partidas guardadas"
+  (Música, Juegos, Código) se eligen como en la consola.
+  Form desde el contenido: el usuario nombró el menú de la PS2; el contenido
+  ya son "datos guardados" de tu vida (lo escuchado, lo jugado, lo construido).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #06070c;
+    --surface: #0e1018;
+    --line: rgba(170, 180, 255, 0.10);
+    --line-strong: rgba(170, 180, 255, 0.28);
+    --text: #e4e7f0;
+    --muted: #8d93a6;
+    --accent: #8f9bff;
+    --accent-soft: rgba(143, 155, 255, 0.14);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); }
+  body {
+    font-family: 'Sora', system-ui, sans-serif; font-weight: 300;
+    color: var(--text); background: var(--bg);
+    min-height: 100dvh; -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* Torres del BIOS: canvas fijo detrás de todo */
+  #towers { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .fog { position: fixed; inset: auto 0 0 0; height: 45vh; pointer-events: none; z-index: 0;
+    background: linear-gradient(to top, rgba(40, 46, 90, 0.35), transparent); }
+
+  .wrap { position: relative; z-index: 1; max-width: 460px; margin: 0 auto; padding: 56px 20px 64px; }
+
+  /* Cabecera: icono de partida + nombre */
+  .head { display: grid; grid-template-columns: 72px 1fr; gap: 18px; align-items: center; }
+  .save-icon {
+    width: 72px; height: 72px; border-radius: 14px; overflow: hidden; position: relative;
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 0 0 4px rgba(143,155,255,0.05), 0 12px 40px rgba(60, 70, 160, 0.35);
+    animation: hover-float 6s ease-in-out infinite;
+  }
+  .save-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .save-icon::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(255,255,255,0.22), transparent 45%); }
+  h1 { font-weight: 200; font-size: 34px; letter-spacing: -0.02em; line-height: 1.05; }
+  .title { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .line { margin-top: 22px; font-size: 15px; line-height: 1.6; color: #c3c8d8; max-width: 36ch; }
+
+  .socials { display: flex; gap: 8px; margin-top: 22px; }
+  .socials a { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px;
+    color: var(--muted); border: 1px solid var(--line); transition: color .2s, border-color .2s, transform .3s var(--ease); }
+  .socials a:hover, .socials a:focus-visible { color: var(--text); border-color: var(--line-strong); transform: translateY(-2px); }
+
+  /* Enlaces: filas del menú del sistema */
+  .menu { margin-top: 36px; border-top: 1px solid var(--line); }
+  .menu a { display: flex; align-items: center; justify-content: space-between; padding: 16px 4px;
+    border-bottom: 1px solid var(--line); font-size: 16px; font-weight: 400; position: relative;
+    transition: padding .35s var(--ease), color .2s; }
+  .menu a .k { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .menu a::before { content: ''; position: absolute; left: -12px; top: 50%; width: 4px; height: 4px; border-radius: 1px;
+    background: var(--accent); opacity: 0; transform: translateY(-50%) scale(.4); transition: all .35s var(--ease);
+    box-shadow: 0 0 12px var(--accent); }
+  .menu a:hover, .menu a:focus-visible { padding-left: 12px; }
+  .menu a:hover::before, .menu a:focus-visible::before { opacity: 1; transform: translateY(-50%) scale(1); left: 0; }
+  .menu a.primary { color: #fff; font-weight: 600; }
+
+  /* Memory card: tres partidas */
+  .mc-label { margin-top: 48px; display: flex; justify-content: space-between; align-items: baseline; }
+  .mc-label h2 { font-size: 13px; font-weight: 400; color: var(--muted); }
+  .mc-label span { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+  .slot { appearance: none; background: var(--surface); color: var(--text); font: inherit; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 12px 14px; text-align: left;
+    display: flex; flex-direction: column; gap: 12px; min-height: 108px;
+    transition: transform .45s var(--ease), border-color .3s, box-shadow .45s var(--ease), background .3s; }
+  .slot .glyph { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
+    background: rgba(255,255,255,0.04); color: var(--muted); transition: color .3s, background .3s; }
+  .slot b { font-weight: 600; font-size: 14px; }
+  .slot small { display: block; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .slot:hover { transform: translateY(-3px); border-color: var(--line-strong); }
+  .slot[aria-selected="true"] { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-soft), var(--surface));
+    box-shadow: 0 0 0 1px var(--accent), 0 18px 50px rgba(110, 120, 255, 0.25); transform: translateY(-4px); }
+  .slot[aria-selected="true"] .glyph { color: var(--accent); background: rgba(143,155,255,0.12); }
+  .slot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .panel { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .panel[hidden] { display: none; }
+  .panel.enter { animation: panel-in .5s var(--ease); }
+
+  /* Música */
+  .now { display: grid; grid-template-columns: 76px 1fr; gap: 16px; align-items: center; }
+  .now img { width: 76px; height: 76px; border-radius: 10px; display: block; }
+  .live { display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); }
+  .live i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blink 2.4s ease-in-out infinite; }
+  .now h3 { font-weight: 400; font-size: 17px; margin-top: 6px; line-height: 1.3; }
+  .now p { color: var(--muted); font-size: 14px; }
+  .bar { margin-top: 16px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+  .bar span { display: block; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .times { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .tabs { display: flex; gap: 4px; margin-top: 22px; padding: 3px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); }
+  .tabs button { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px;
+    padding: 8px; border-radius: 8px; cursor: pointer; transition: background .3s, color .3s; }
+  .tabs button[aria-selected="true"] { background: rgba(143,155,255,0.12); color: var(--text); }
+  .list { margin-top: 10px; }
+  .row { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 9px 0; }
+  .row img { width: 40px; height: 40px; border-radius: 6px; display: block; }
+  .row .t { font-size: 14px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .s { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .m { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .min { min-width: 0; }
+
+  .rec { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .rec label { font-size: 14px; display: block; }
+  .rec p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .rec input { width: 100%; margin-top: 12px; background: var(--bg); border: 1px solid var(--line-strong); color: var(--text);
+    border-radius: 10px; padding: 12px 14px; font: inherit; font-size: 14px; }
+  .rec input::placeholder { color: var(--muted); }
+  .rec input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  /* Juegos */
+  .game-now { display: grid; grid-template-columns: 76px 1fr; gap: 16px; align-items: center; }
+  .game-now img { width: 76px; height: 76px; border-radius: 12px; }
+  .shelf { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 22px; }
+  .shelf figure { margin: 0; }
+  .shelf img { width: 100%; aspect-ratio: 1; border-radius: 10px; display: block; border: 1px solid var(--line);
+    transition: transform .45s var(--ease); }
+  .shelf figure:hover img { transform: translateY(-3px) scale(1.02); }
+  .shelf figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Código */
+  .gh-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .gh-top b { font-weight: 400; font-size: 26px; }
+  .gh-top span { color: var(--muted); font-size: 13px; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; margin-top: 14px; }
+  .heat i { aspect-ratio: 1; border-radius: 2px; background: rgba(255,255,255,0.05); }
+  .heat i[data-l="1"] { background: rgba(143,155,255,0.25); }
+  .heat i[data-l="2"] { background: rgba(143,155,255,0.45); }
+  .heat i[data-l="3"] { background: rgba(143,155,255,0.7); }
+  .heat i[data-l="4"] { background: var(--accent); box-shadow: 0 0 6px rgba(143,155,255,0.6); }
+  .repos { margin-top: 18px; }
+  .repo { display: block; padding: 12px 0; border-top: 1px solid var(--line); }
+  .repo .n { font-size: 14px; font-weight: 400; display: flex; justify-content: space-between; gap: 10px; }
+  .repo .d { font-size: 13px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .repo .tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+  footer { margin-top: 44px; display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+  footer a:hover { color: var(--text); }
+
+  @keyframes hover-float { 50% { transform: translateY(-4px); } }
+  @keyframes blink { 50% { opacity: .35; } }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(10px) scale(.99); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  .rise { animation: rise .8s var(--ease) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="towers" aria-hidden="true"></canvas>
+<div class="fog" aria-hidden="true"></div>
+
+<main class="wrap">
+  <header class="head rise">
+    <div class="save-icon"><img src="assets/avatar-sm.jpg" alt="David Ciro"></div>
+    <div>
+      <h1 id="name"></h1>
+      <p class="title" id="title"></p>
+    </div>
+  </header>
+  <p class="line rise" style="animation-delay:.08s" id="line"></p>
+  <nav class="socials rise" style="animation-delay:.14s" id="socials" aria-label="Redes"></nav>
+
+  <nav class="menu rise" style="animation-delay:.2s" id="menu" aria-label="Enlaces"></nav>
+
+  <section aria-labelledby="mc">
+    <div class="mc-label rise" style="animation-delay:.28s"><h2 id="mc">Memory card</h2><span>3 partidas</span></div>
+    <div class="slots rise" style="animation-delay:.34s" role="tablist" id="slots"></div>
+
+    <div class="panel enter" id="p-musica" role="tabpanel"></div>
+    <div class="panel" id="p-juegos" role="tabpanel" hidden></div>
+    <div class="panel" id="p-codigo" role="tabpanel" hidden></div>
+  </section>
+
+  <footer><a href="#">Política de privacidad</a><span>Datos en vivo: ejemplo</span></footer>
+</main>
+
+<script src="assets/data.js"></script>
+<script>
+  const D = window.CIRO, U = window.CIRO_UTIL;
+  const $ = (id) => document.getElementById(id);
+  $('name').textContent = D.profile.name;
+  $('title').textContent = D.profile.title;
+  $('line').textContent = D.profile.line;
+  $('socials').innerHTML = D.socials.map(s => `<a href="${s.url}" aria-label="${s.name}">${U.icon(s.name, 16)}</a>`).join('');
+  $('menu').innerHTML = D.links.map((l, i) =>
+    `<a href="${l.url}" class="${i === 0 ? 'primary' : ''}"><span>${l.title}</span><span class="k">${i === 0 ? 'abrir' : '↗'}</span></a>`).join('');
+
+  const slots = [
+    { id: 'musica', name: 'Música', meta: 'sonando', icon: U.icon('Spotify', 18) },
+    { id: 'juegos', name: 'Juegos', meta: 'en línea', icon: U.icon('PlayStation', 18) },
+    { id: 'codigo', name: 'Código', meta: `${D.github.last30} commits`, icon: U.icon('GitHub', 18) },
+  ];
+  $('slots').innerHTML = slots.map((s, i) => `
+    <button class="slot" role="tab" aria-selected="${i === 0}" aria-controls="p-${s.id}" data-id="${s.id}">
+      <span class="glyph">${s.icon}</span>
+      <span><b>${s.name}</b><small>${s.meta}</small></span>
+    </button>`).join('');
+
+  const np = D.nowPlaying, pct = (np.progressMs / np.durationMs) * 100;
+  const rows = (items, meta) => items.map(t => `
+    <div class="row"><img src="${t.cover}" alt="">
+      <div class="min"><div class="t">${t.title}</div><div class="s">${t.artist ?? t.sub}</div></div>
+      <span class="m">${meta(t)}</span></div>`).join('');
+  $('p-musica').innerHTML = `
+    <div class="now"><img src="${np.cover}" alt="${np.album}">
+      <div class="min"><span class="live"><i></i>Ahora suena</span><h3>${np.title}</h3><p>${np.artist}</p></div></div>
+    <div class="bar"><span style="width:${pct}%"></span></div>
+    <div class="times"><span>${U.fmt(np.progressMs)}</span><span>${U.fmt(np.durationMs)}</span></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-list="recent">Recientes</button>
+      <button role="tab" aria-selected="false" data-list="top">Top del mes</button>
+    </div>
+    <div class="list" id="music-list">${rows(D.recent, t => U.ago(t.at))}</div>
+    <div class="rec"><label for="rec">Recomiéndame una canción</label>
+      <p>La añado a mi playlist. A ver qué me descubres.</p>
+      <input id="rec" type="search" placeholder="Canción o artista"></div>`;
+
+  const g = D.nowGaming;
+  $('p-juegos').innerHTML = `
+    <div class="game-now"><img src="${g.cover}" alt="">
+      <div class="min"><span class="live"><i></i>Jugando ahora · ${g.platform}</span><h3 style="font-weight:400;font-size:17px;margin-top:6px">${g.title}</h3>
+      <p style="color:var(--muted);font-size:14px">Desde hace ${g.since}</p></div></div>
+    <div class="shelf">${D.games.map(x => `<figure><img src="${x.cover}" alt="${x.title}"><figcaption>${U.ago(x.at)}</figcaption></figure>`).join('')}</div>`;
+
+  const heat = U.heatmap(26);
+  $('p-codigo').innerHTML = `
+    <div class="gh-top"><b>${D.github.last30}</b><span>contribuciones en 30 días · racha ${D.github.streak} d</span></div>
+    <div class="heat" aria-label="Actividad del último medio año">${heat.flat().map(l => `<i data-l="${l}"></i>`).join('')}</div>
+    <div class="repos">${D.repos.map(r => r.private
+      ? `<div class="repo"><div class="n"><span>${r.name}</span><span class="tag">privado</span></div></div>`
+      : `<a class="repo" href="#"><div class="n"><span>${r.name}</span><span class="tag"><span class="dot" style="background:${r.langColor}"></span>${r.lang}</span></div>${r.desc ? `<div class="d">${r.desc}</div>` : ''}</a>`).join('')}</div>`;
+
+  // Cambiar de partida
+  document.querySelectorAll('.slot').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.slot').forEach(b => b.setAttribute('aria-selected', b === btn));
+    document.querySelectorAll('.panel').forEach(p => {
+      const on = p.id === 'p-' + btn.dataset.id;
+      p.hidden = !on;
+      if (on) { p.classList.remove('enter'); void p.offsetWidth; p.classList.add('enter'); }
+    });
+  }));
+  document.querySelectorAll('[data-list]').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-list]').forEach(b => b.setAttribute('aria-selected', b === btn));
+    $('music-list').innerHTML = btn.dataset.list === 'top'
+      ? rows(D.topMonth.items, t => '')
+      : rows(D.recent, t => U.ago(t.at));
+  }));
+
+  // Torres de luz del BIOS de PS2: columnas de cubos translúcidos que respiran.
+  const cv = $('towers'), ctx = cv.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, towers = [];
+  function setup() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    let s = 3; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    towers = Array.from({ length: 34 }, () => {
+      const depth = r();                       // 0 lejos, 1 cerca
+      return { x: r() * W, depth, h: 2 + Math.floor(r() * 9), size: (6 + depth * 16) * dpr,
+        phase: r() * Math.PI * 2, speed: 0.15 + r() * 0.35 };
+    }).sort((a, b) => a.depth - b.depth);
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    for (const tw of towers) {
+      const base = H * (0.62 + tw.depth * 0.36);
+      const breathe = 0.5 + 0.5 * Math.sin(t * 0.0006 * tw.speed + tw.phase);
+      const hh = Math.max(1, Math.round(tw.h * (0.7 + 0.3 * breathe)));
+      for (let i = 0; i < hh; i++) {
+        const y = base - i * tw.size * 1.08;
+        const a = (0.06 + tw.depth * 0.18) * (1 - i / (hh + 2)) * (0.6 + 0.4 * breathe);
+        ctx.fillStyle = `rgba(150, 160, 255, ${a})`;
+        ctx.fillRect(tw.x, y, tw.size, tw.size);
+        ctx.strokeStyle = `rgba(200, 210, 255, ${a * 1.4})`;
+        ctx.strokeRect(tw.x + 0.5, y + 0.5, tw.size - 1, tw.size - 1);
+      }
+    }
+    if (!still) requestAnimationFrame(draw);
+  }
+  setup(); requestAnimationFrame(draw);
+  addEventListener('resize', () => { setup(); if (still) draw(0); });
+</script>
+</body>
+</html>

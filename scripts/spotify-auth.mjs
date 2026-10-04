@@ -25,6 +25,8 @@ const SCOPES = [
   // Necesario para que /api/recommend-song añada las canciones que recomiendan
   // los visitantes a la playlist pública.
   'playlist-modify-public',
+  // Necesario para /api/top-tracks ("Más escuchados del mes").
+  'user-top-read',
 ].join(' ');
 
 function envVar(key) {
