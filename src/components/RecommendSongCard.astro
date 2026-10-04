@@ -1,50 +1,48 @@
 ---
+/**
+ * "Déjame una canción": el visitante busca en Spotify, elige una pista y se
+ * añade a la playlist pública (con aviso por Telegram). Solo se envía un
+ * trackId, nunca texto libre. Lógica del servidor en /api/recommend-song.
+ */
 ---
 
-<div id="recommend-card" class="widget">
-  <div class="last-label">Recomiéndame una canción</div>
-  <p class="rec-intro">Busca una canción y la añado a mi playlist. A ver qué me descubres.</p>
+<div id="recommend-card" class="ask">
+  <label class="ask-title" for="rec-query">Déjame una canción</label>
+  <p class="ask-intro">Búscala y la guardo en mi playlist. A ver qué me descubres.</p>
+  <input
+    id="rec-query"
+    type="search"
+    class="ask-input"
+    placeholder="Canción o artista"
+    autocomplete="off"
+    aria-controls="rec-results"
+  />
 
-  <div class="rec-search">
-    <input
-      id="rec-query"
-      type="search"
-      class="rec-input"
-      placeholder="Canción o artista..."
-      autocomplete="off"
-      aria-label="Buscar una canción en Spotify"
-    />
-  </div>
+  <div id="rec-results" class="rows" aria-live="polite"></div>
 
-  <div id="rec-results" class="track-list"></div>
-
-  <div id="rec-confirm" class="rec-confirm" hidden>
-    <div class="rec-confirm-track">
-      <img id="rec-confirm-cover" class="track-cover" width="36" height="36" alt="" />
-      <div class="track-info">
-        <div id="rec-confirm-title" class="track-title"></div>
-        <div id="rec-confirm-artist" class="track-artist"></div>
+  <div id="rec-confirm" class="ask-confirm" hidden>
+    <div class="row" style="cursor:default">
+      <img id="rec-confirm-cover" class="row-cover" width="44" height="44" alt="" />
+      <div class="min">
+        <div id="rec-confirm-title" class="row-title"></div>
+        <div id="rec-confirm-artist" class="row-sub"></div>
       </div>
+      <span></span>
     </div>
-    <input
-      id="rec-from"
-      type="text"
-      class="rec-input"
-      placeholder="Tu nombre (opcional)"
-      maxlength="40"
-      autocomplete="name"
-      aria-label="Tu nombre, opcional"
-    />
-    <div class="rec-actions">
-      <button id="rec-cancel" type="button" class="rec-btn rec-btn-ghost">Cancelar</button>
-      <button id="rec-send" type="button" class="rec-btn">Recomendar</button>
+    <label class="sr-only" for="rec-from">Tu nombre (opcional)</label>
+    <input id="rec-from" type="text" class="ask-input" placeholder="Tu nombre (opcional)" maxlength="40" autocomplete="name" />
+    <div class="ask-actions">
+      <button id="rec-cancel" type="button" class="btn btn-ghost">Cancelar</button>
+      <button id="rec-send" type="button" class="btn btn-lamp">Recomendar</button>
     </div>
   </div>
 
-  <div id="rec-status" class="rec-status" hidden></div>
+  <p id="rec-status" class="ask-status" role="status" hidden></p>
 </div>
 
 <script>
+  import { escapeHtml } from '../lib/client';
+
   const queryInput = document.getElementById('rec-query') as HTMLInputElement | null;
   const results = document.getElementById('rec-results');
   const confirmBox = document.getElementById('rec-confirm');
@@ -58,24 +56,19 @@
     let debounce: ReturnType<typeof setTimeout>;
     let lastQuery = '';
 
-    function escapeHtml(s: string): string {
-      return String(s ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
+    const showStatus = (message: string, kind: 'ok' | 'error') => {
+      status.textContent = message;
+      status.className = `ask-status is-${kind}`;
+      status.hidden = false;
+    };
 
-    function showStatus(message: string, kind: 'ok' | 'error') {
-      status!.textContent = message;
-      status!.className = `rec-status rec-status-${kind}`;
-      status!.hidden = false;
-    }
-
-    function resetToSearch() {
+    const resetToSearch = () => {
       selectedId = null;
-      confirmBox!.hidden = true;
-      results!.innerHTML = '';
-      queryInput!.value = '';
+      confirmBox.hidden = true;
+      results.innerHTML = '';
+      queryInput.value = '';
       if (fromInput) fromInput.value = '';
-    }
+    };
 
     async function search(query: string) {
       try {
@@ -86,40 +79,36 @@
         if (query !== lastQuery) return;
 
         if (!Array.isArray(tracks) || tracks.length === 0) {
-          results!.innerHTML = `<p class="rec-empty">Sin resultados.</p>`;
+          results.innerHTML = `<p class="note" style="padding:10px 0">No encontré nada con eso.</p>`;
           return;
         }
 
-        results!.innerHTML = tracks
+        results.innerHTML = tracks
           .map((t: any) => {
             const name = escapeHtml(t.name);
             const artists = escapeHtml(t.artists);
             const cover = t.imageUrl
-              ? `<img class="track-cover" src="${escapeHtml(t.imageUrl)}" alt="" width="36" height="36" loading="lazy" />`
-              : `<div class="track-cover" style="background:var(--surface);"></div>`;
+              ? `<img class="row-cover" src="${escapeHtml(t.imageUrl)}" alt="" width="44" height="44" loading="lazy" />`
+              : `<span class="row-cover" style="background:var(--surface)"></span>`;
             return `
-              <div class="track-item rec-result" role="button" tabindex="0"
+              <div class="row" role="button" tabindex="0"
                    data-id="${escapeHtml(t.id)}" data-name="${name}" data-artists="${artists}"
-                   data-cover="${escapeHtml(t.imageUrl ?? '')}"
-                   aria-label="Recomendar ${name}">
+                   data-cover="${escapeHtml(t.imageUrl ?? '')}" aria-label="Elegir ${name}, de ${artists}">
                 ${cover}
-                <div class="track-info">
-                  <div class="track-title">${name}</div>
-                  <div class="track-artist">${artists}</div>
-                </div>
+                <div class="min"><div class="row-title">${name}</div><div class="row-sub">${artists}</div></div>
+                <span></span>
               </div>`;
           })
           .join('');
 
-        results!.querySelectorAll<HTMLElement>('.rec-result').forEach((el) => {
-          const select = () => selectTrack(el);
-          el.addEventListener('click', select);
+        results.querySelectorAll<HTMLElement>('.row[data-id]').forEach((el) => {
+          el.addEventListener('click', () => selectTrack(el));
           el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); }
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectTrack(el); }
           });
         });
       } catch {
-        results!.innerHTML = `<p class="rec-empty">No se pudo buscar ahora mismo.</p>`;
+        results.innerHTML = `<p class="note" style="padding:10px 0">No pude buscar ahora mismo.</p>`;
       }
     }
 
@@ -128,29 +117,22 @@
       if (!selectedId) return;
 
       const cover = document.getElementById('rec-confirm-cover') as HTMLImageElement;
-      const title = document.getElementById('rec-confirm-title');
-      const artist = document.getElementById('rec-confirm-artist');
+      cover.hidden = !el.dataset.cover;
+      if (el.dataset.cover) cover.src = el.dataset.cover;
+      // dataset devuelve el texto ya des-escapado: textContent lo pinta seguro.
+      document.getElementById('rec-confirm-title')!.textContent = el.dataset.name ?? '';
+      document.getElementById('rec-confirm-artist')!.textContent = el.dataset.artists ?? '';
 
-      if (el.dataset.cover) {
-        cover.src = el.dataset.cover;
-        cover.hidden = false;
-      } else {
-        cover.hidden = true;
-      }
-      if (title) title.textContent = el.dataset.name ?? '';
-      if (artist) artist.textContent = el.dataset.artists ?? '';
-
-      results!.innerHTML = '';
-      status!.hidden = true;
-      confirmBox!.hidden = false;
-      confirmBox!.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      results.innerHTML = '';
+      status.hidden = true;
+      confirmBox.hidden = false;
+      fromInput?.focus();
     }
 
     async function send() {
       if (!selectedId) return;
-
-      sendBtn!.disabled = true;
-      sendBtn!.textContent = 'Enviando...';
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Enviando';
 
       try {
         const res = await fetch('/api/recommend-song', {
@@ -161,19 +143,19 @@
         const data = await res.json();
 
         if (!res.ok) {
-          showStatus(data.error ?? 'No se pudo enviar.', 'error');
+          showStatus(data.error ?? 'No pude guardarla. Inténtalo más tarde.', 'error');
         } else if (data.duplicate) {
-          showStatus(`"${data.name}" ya estaba en la playlist. ¡Buen gusto!`, 'ok');
+          showStatus(`"${data.name}" ya estaba en la playlist. Buen gusto.`, 'ok');
           resetToSearch();
         } else {
-          showStatus(`¡Gracias! "${data.name}" ya está en la playlist.`, 'ok');
+          showStatus(`Gracias. "${data.name}" ya está en la playlist.`, 'ok');
           resetToSearch();
         }
       } catch {
-        showStatus('No se pudo enviar. Inténtalo más tarde.', 'error');
+        showStatus('No pude guardarla. Inténtalo más tarde.', 'error');
       } finally {
-        sendBtn!.disabled = false;
-        sendBtn!.textContent = 'Recomendar';
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Recomendar';
       }
     }
 
@@ -181,7 +163,6 @@
       const query = queryInput.value.trim();
       lastQuery = query;
       clearTimeout(debounce);
-
       if (query.length < 2) {
         results.innerHTML = '';
         return;
@@ -193,6 +174,7 @@
     cancelBtn.addEventListener('click', () => {
       confirmBox.hidden = true;
       selectedId = null;
+      queryInput.focus();
     });
   }
 </script>

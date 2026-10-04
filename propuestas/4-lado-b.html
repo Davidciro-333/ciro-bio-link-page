@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lado B · David Ciro</title>
+<!--
+  Dirección 4 · LADO B
+  Concepto: tu página como las notas interiores de un disco.
+  Cálida como Claude, con la música como protagonista como en Spotify:
+  la carátula que suena tiñe la página. Lado A lo que escuchas, Lado B lo
+  que juegas, pista oculta lo que construyes.
+  Form desde el contenido: tus últimas escuchas son rock clásico (Sabbath,
+  Ozzy, Scorpions, Chicago); el formato "tracklist de vinilo" sale de ahí.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #13110f;
+    --surface: #1c1916;
+    --line: rgba(241, 236, 227, 0.10);
+    --text: #f1ece3;
+    --muted: #a49d92;
+    --coral: #e5835f;
+    --tint: 120, 90, 70;                 /* se reemplaza con el color de la carátula */
+    --ease: cubic-bezier(0.2, 0.9, 0.25, 1);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); }
+  body { font-family: 'Geist', system-ui, sans-serif; color: var(--text); background: var(--bg); min-height: 100dvh;
+    -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: 'Geist Mono', monospace; }
+
+  /* Luz de la carátula + grano de papel, ambos fijos */
+  .ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; transition: background 1.2s var(--ease);
+    background: radial-gradient(90% 55% at 80% 0%, rgba(var(--tint), 0.32), transparent 65%); }
+  .grain { position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: .07; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .wrap { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 48px 22px 72px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; }
+  .me { display: flex; align-items: center; gap: 12px; }
+  .me img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; display: block; }
+  .me span { font-size: 14px; color: var(--muted); }
+  .socials { display: flex; gap: 4px; }
+  .socials a { width: 40px; height: 40px; display: grid; place-items: center; color: var(--muted); border-radius: 50%; transition: color .2s, background .2s; }
+  .socials a:hover, .socials a:focus-visible { color: var(--text); background: var(--surface); }
+
+  h1 { font-family: 'Newsreader', serif; font-weight: 400; font-size: clamp(52px, 15vw, 76px); letter-spacing: -0.035em; line-height: .95; margin-top: 44px; }
+  h1 em { font-style: italic; color: var(--coral); }
+  .lede { font-size: 17px; line-height: 1.55; color: #d6cfc3; margin-top: 18px; max-width: 34ch; }
+
+  .links { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .links a { display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border-radius: 999px; font-size: 15px; font-weight: 500;
+    border: 1px solid var(--line); transition: background .25s, border-color .25s, transform .3s var(--ease); }
+  .links a:hover, .links a:focus-visible { border-color: rgba(241,236,227,0.3); transform: translateY(-1px); }
+  .links a:active { transform: scale(.98); }
+  .links a.main { background: var(--coral); color: var(--bg); border-color: var(--coral); }
+  .links a.main:hover { background: #ee9373; }
+  .links .ar { opacity: .6; font-size: 13px; }
+
+  /* Secciones tipo "lado" de un disco */
+  .side { margin-top: 64px; }
+  .side-h { display: flex; align-items: baseline; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .side-h .k { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--coral); }
+  .side-h h2 { font-family: 'Newsreader', serif; font-weight: 400; font-size: 30px; letter-spacing: -0.02em; }
+
+  .np { display: grid; grid-template-columns: 1fr; gap: 18px; margin-top: 22px; }
+  .np-cover { position: relative; width: 100%; aspect-ratio: 1; max-width: 300px; }
+  .np-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; display: block; position: relative; z-index: 1;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.7); }
+  /* El vinilo asoma por detrás de la funda y gira */
+  .np-cover .vinyl { position: absolute; top: 4%; left: 36%; width: 92%; aspect-ratio: 1; border-radius: 50%; z-index: 0;
+    background: repeating-radial-gradient(circle, #0b0a09 0 2px, #171513 2px 3px);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); animation: spin 6s linear infinite; }
+  .np-cover .vinyl::after { content: ''; position: absolute; inset: 36%; border-radius: 50%; background: var(--coral); box-shadow: inset 0 0 0 10px rgba(0,0,0,.25); }
+  .np-meta .live { display: inline-flex; align-items: center; gap: 8px; font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); }
+  .np-meta .live i { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+  .np-meta .live i b { width: 2px; background: var(--coral); animation: eq .9s ease-in-out infinite alternate; }
+  .np-meta h3 { font-family: 'Newsreader', serif; font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; margin-top: 8px; }
+  .np-meta p { color: var(--muted); font-size: 16px; margin-top: 4px; }
+  .prog { margin-top: 16px; height: 3px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .prog span { display: block; height: 100%; background: var(--text); border-radius: 3px; }
+  .t { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  .seg { display: inline-flex; margin-top: 28px; padding: 3px; border-radius: 999px; border: 1px solid var(--line); }
+  .seg button { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: background .25s, color .25s; }
+  .seg button[aria-selected="true"] { background: var(--surface); color: var(--text); }
+
+  .tracks { margin-top: 10px; counter-reset: n; }
+  .track { display: grid; grid-template-columns: 22px 44px 1fr auto; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line);
+    transition: background .2s; }
+  .track::before { counter-increment: n; content: counter(n, decimal-leading-zero); font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); }
+  .track img { width: 44px; height: 44px; border-radius: 3px; display: block; }
+  .track .ti { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track .ar { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track .m { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); }
+  .min { min-width: 0; }
+
+  .ask { margin-top: 26px; padding: 20px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+  .ask label { font-family: 'Newsreader', serif; font-size: 24px; letter-spacing: -0.01em; display: block; }
+  .ask p { color: var(--muted); font-size: 15px; margin-top: 4px; line-height: 1.5; }
+  .ask .row { display: flex; gap: 8px; margin-top: 14px; }
+  .ask input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 12px 16px; color: var(--text); font: inherit; font-size: 15px; }
+  .ask input::placeholder { color: var(--muted); }
+  .ask input:focus { outline: none; border-color: var(--coral); }
+
+  .games-now { display: grid; grid-template-columns: 84px 1fr; gap: 16px; align-items: center; margin-top: 22px; }
+  .games-now img { width: 84px; height: 84px; border-radius: 14px; display: block; }
+  .games-now h3 { font-family: 'Newsreader', serif; font-weight: 500; font-size: 26px; letter-spacing: -0.02em; }
+  .games-now p { color: var(--muted); font-size: 15px; }
+  .rail { display: flex; gap: 12px; overflow-x: auto; margin: 20px -22px 0; padding: 0 22px 6px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .rail figure { flex: 0 0 116px; margin: 0; scroll-snap-align: start; }
+  .rail img { width: 116px; height: 116px; border-radius: 12px; display: block; transition: transform .35s var(--ease); }
+  .rail figure:hover img { transform: translateY(-3px); }
+  .rail figcaption { font-size: 13px; margin-top: 8px; line-height: 1.3; }
+  .rail figcaption span { display: block; color: var(--muted); font-family: 'Geist Mono', monospace; font-size: 12px; margin-top: 2px; }
+
+  .gh-n { display: flex; align-items: baseline; gap: 12px; margin-top: 22px; }
+  .gh-n b { font-family: 'Newsreader', serif; font-weight: 400; font-size: 64px; line-height: .9; letter-spacing: -0.03em; }
+  .gh-n span { color: var(--muted); font-size: 15px; line-height: 1.4; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; margin-top: 18px; }
+  .heat i { aspect-ratio: 1; border-radius: 2px; background: rgba(241,236,227,0.06); }
+  .heat i[data-l="1"] { background: rgba(229,131,95,0.28); }
+  .heat i[data-l="2"] { background: rgba(229,131,95,0.5); }
+  .heat i[data-l="3"] { background: rgba(229,131,95,0.75); }
+  .heat i[data-l="4"] { background: var(--coral); }
+  .repo { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .repo:first-of-type { margin-top: 18px; border-top: 1px solid var(--line); }
+  .repo b { font-weight: 500; font-size: 15px; }
+  .repo .tag { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); }
+  .repo .d { grid-column: 1 / -1; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+  footer { margin-top: 64px; display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes eq { from { height: 3px; } to { height: 12px; } }
+  @keyframes up { from { opacity: 0; transform: translateY(16px); } }
+  .up { animation: up .9s var(--ease) both; }
+  @media (min-width: 560px) { .np { grid-template-columns: 220px 1fr; align-items: end; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="ambient" id="ambient" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<main class="wrap">
+  <header class="top up">
+    <div class="me"><img src="assets/avatar-sm.jpg" alt="David Ciro"><span id="title"></span></div>
+    <nav class="socials" id="socials" aria-label="Redes"></nav>
+  </header>
+
+  <h1 class="up" style="animation-delay:.08s">David <em>Ciro</em></h1>
+  <p class="lede up" style="animation-delay:.16s">Desarrollador de software. Esta página es mi cuarto: lo que escucho, lo que juego y lo que construyo, en vivo.</p>
+  <nav class="links up" style="animation-delay:.24s" id="links" aria-label="Enlaces"></nav>
+
+  <section class="side up" style="animation-delay:.32s" aria-labelledby="h-a">
+    <div class="side-h"><span class="k">Lado A</span><h2 id="h-a">Lo que escucho</h2></div>
+    <div id="music"></div>
+  </section>
+
+  <section class="side" aria-labelledby="h-b">
+    <div class="side-h"><span class="k">Lado B</span><h2 id="h-b">Lo que juego</h2></div>
+    <div id="games"></div>
+  </section>
+
+  <section class="side" aria-labelledby="h-c">
+    <div class="side-h"><span class="k">Pista oculta</span><h2 id="h-c">Lo que construyo</h2></div>
+    <div id="code"></div>
+  </section>
+
+  <footer><a href="#">Política de privacidad</a><span class="mono">Datos en vivo: ejemplo</span></footer>
+</main>
+
+<script src="assets/data.js"></script>
+<script>
+  const D = window.CIRO, U = window.CIRO_UTIL, $ = (id) => document.getElementById(id);
+  $('title').textContent = '@itsciro.me';
+  $('socials').innerHTML = D.socials.map(s => `<a href="${s.url}" aria-label="${s.name}">${U.icon(s.name, 16)}</a>`).join('');
+  $('links').innerHTML = D.links.map((l, i) => `<a href="${l.url}" class="${i === 0 ? 'main' : ''}">${l.title}<span class="ar">↗</span></a>`).join('');
+
+  const np = D.nowPlaying, pct = (np.progressMs / np.durationMs) * 100;
+  const tracks = (arr, meta) => arr.map(t => `<a class="track" href="${t.url ?? '#'}"><img src="${t.cover}" alt="">
+    <div class="min"><div class="ti">${t.title}</div><div class="ar">${t.artist ?? t.sub}</div></div><span class="m">${meta(t)}</span></a>`).join('');
+  $('music').innerHTML = `
+    <div class="np">
+      <div class="np-cover"><div class="vinyl"></div><img id="cover" src="${np.cover}" alt="${np.album}" crossorigin="anonymous"></div>
+      <div class="np-meta"><span class="live"><i><b></b><b style="animation-delay:-.3s"></b><b style="animation-delay:-.6s"></b></i>Sonando ahora</span>
+        <h3>${np.title}</h3><p>${np.artist}</p>
+        <div class="prog"><span style="width:${pct}%"></span></div>
+        <div class="t mono"><span>${U.fmt(np.progressMs)}</span><span>${U.fmt(np.durationMs)}</span></div></div>
+    </div>
+    <div class="seg" role="tablist"><button role="tab" aria-selected="true" data-l="recent">Recientes</button><button role="tab" aria-selected="false" data-l="top">Top del mes</button></div>
+    <div class="tracks" id="tracks">${tracks(D.recent, t => U.ago(t.at))}</div>
+    <div class="ask"><label for="ask">Pídeme una canción</label>
+      <p>La busco, la añado a mi playlist y me llega un aviso. A ver qué me descubres.</p>
+      <div class="row"><input id="ask" type="search" placeholder="Canción o artista"></div></div>`;
+  document.querySelectorAll('[data-l]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-l]').forEach(x => x.setAttribute('aria-selected', x === b));
+    $('tracks').innerHTML = b.dataset.l === 'top' ? tracks(D.topMonth.items, () => '') : tracks(D.recent, t => U.ago(t.at));
+  }));
+
+  const g = D.nowGaming;
+  $('games').innerHTML = `
+    <div class="games-now"><img src="${g.cover}" alt=""><div><span class="mono" style="font-size:12px;color:var(--coral)">Jugando ahora · ${g.platform}</span><h3>${g.title}</h3><p>Desde hace ${g.since}</p></div></div>
+    <div class="rail">${D.games.map(x => `<figure><img src="${x.cover}" alt=""><figcaption>${x.title}<span>${U.ago(x.at)}</span></figcaption></figure>`).join('')}</div>`;
+
+  $('code').innerHTML = `
+    <div class="gh-n"><b>${D.github.last30}</b><span>contribuciones en los últimos 30 días.<br>Racha de ${D.github.streak} días.</span></div>
+    <div class="heat">${U.heatmap(26).flat().map(l => `<i data-l="${l}"></i>`).join('')}</div>
+    ${D.repos.map(r => r.private
+      ? `<div class="repo"><b>${r.name}</b><span class="tag">privado</span></div>`
+      : `<a class="repo" href="#"><b>${r.name}</b><span class="tag">${r.lang}</span>${r.desc ? `<span class="d">${r.desc}</span>` : ''}</a>`).join('')}`;
+
+  // La carátula tiñe la página: color medio de la imagen (si el CDN permite leerla).
+  const img = $('cover');
+  img.addEventListener('load', () => {
+    try {
+      const c = document.createElement('canvas'); c.width = c.height = 16;
+      const x = c.getContext('2d'); x.drawImage(img, 0, 0, 16, 16);
+      const d = x.getImageData(0, 0, 16, 16).data; let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { const l = d[i] + d[i+1] + d[i+2]; if (l > 60 && l < 690) { r += d[i]; g += d[i+1]; b += d[i+2]; n++; } }
+      if (n) document.documentElement.style.setProperty('--tint', `${r/n|0}, ${g/n|0}, ${b/n|0}`);
+    } catch (e) { /* CDN sin CORS: se queda el tono cálido por defecto */ }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+---
+/**
+ * "Mi diario": agrupa los widgets en entradas que se eligen como partidas
+ * guardadas. Solo una página está abierta a la vez (la primera por defecto).
+ * Cada widget puede actualizar el texto de su entrada con setEntryMeta().
+ */
+type EntryId = 'musica' | 'juegos' | 'codigo';
+
+interface Props {
+  entries: { id: EntryId; name: string; meta: string; icon: string }[];
+}
+
+const { entries } = Astro.props;
+---
+
+<section class="journal" aria-labelledby="journal-title">
+  <div class="journal-title"><h2 id="journal-title">Mi diario</h2></div>
+
+  <div class="entries" role="tablist" aria-labelledby="journal-title" style={`--entries:${entries.length}`}>
+    {entries.map((e, i) => (
+      <button
+        class="entry"
+        role="tab"
+        id={`entry-${e.id}`}
+        aria-selected={i === 0 ? 'true' : 'false'}
+        aria-controls={`page-${e.id}`}
+        tabindex={i === 0 ? 0 : -1}
+        type="button"
+      >
+        <span class="entry-icon" set:html={e.icon} />
+        <span>
+          <span class="entry-name">{e.name}</span>
+          <span class="entry-meta" data-entry-meta={e.id}>{e.meta}</span>
+        </span>
+      </button>
+    ))}
+  </div>
+
+  {entries.map((e, i) => (
+    <div class="journal-page" role="tabpanel" id={`page-${e.id}`} aria-labelledby={`entry-${e.id}`} hidden={i !== 0}>
+      {e.id === 'musica' && <slot name="musica" />}
+      {e.id === 'juegos' && <slot name="juegos" />}
+      {e.id === 'codigo' && <slot name="codigo" />}
+    </div>
+  ))}
+</section>
+
+<script>
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.entry'));
+
+  function select(tab: HTMLButtonElement, focus = false) {
+    for (const t of tabs) {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      const page = document.getElementById(t.getAttribute('aria-controls')!);
+      if (!page) continue;
+      page.hidden = !on;
+      if (on) {
+        // Reinicia la animación de "pasar página".
+        page.classList.remove('is-turning');
+        void page.offsetWidth;
+        page.classList.add('is-turning');
+      }
+    }
+    if (focus) tab.focus();
+  }
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(tab));
+    tab.addEventListener('keydown', (e) => {
+      const keys: Record<string, number> = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 };
+      if (!(e.key in keys)) return;
+      e.preventDefault();
+      select(tabs[(keys[e.key] + tabs.length) % tabs.length], true);
+    });
+  });
+</script>

@@ -3,60 +3,77 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
+  description?: string;
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description = 'David Ciro: lo que escucho, lo que juego y lo que construyo, en vivo.',
+} = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang="es" data-theme="dark" data-palette="silver">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b0d11" />
     <link rel="icon" type="image/svg+xml" href="/itsciroicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-
-    <script is:inline>
-      const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      const palette = localStorage.getItem('palette') || 'silver';
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.setAttribute('data-palette', palette);
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div class="bg-orbs">
-      <div class="orb orb-1"></div>
-      <div class="orb orb-2"></div>
-      <div class="orb orb-3"></div>
-    </div>
-    <div class="stars" id="stars"></div>
+    <canvas class="dust" id="dust" aria-hidden="true"></canvas>
+    <div class="mist" aria-hidden="true"></div>
 
     <slot />
 
-    <script is:inline>
-      // Stars
-      const starsEl = document.getElementById('stars');
-      for (let i = 0; i < 55; i++) {
-        const s = document.createElement('div');
-        s.className = 'star';
-        const size = Math.random() * 2.2 + 0.5;
-        s.style.cssText = `width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${Math.random()*4+3}s;--delay:-${Math.random()*6}s;`;
-        starsEl.appendChild(s);
-      }
+    <script>
+      // Polvo que cae despacio; algunas motas cálidas, como chispas del farol.
+      const canvas = document.getElementById('dust') as HTMLCanvasElement | null;
+      const ctx = canvas?.getContext('2d');
+      const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      // Cursor glow local — solo dentro de cada elemento
-      document.querySelectorAll('.link-btn, .widget, .social-icon').forEach(el => {
-        el.addEventListener('mousemove', e => {
-          const rect = el.getBoundingClientRect();
-          const x = ((e.clientX - rect.left) / rect.width) * 100;
-          const y = ((e.clientY - rect.top) / rect.height) * 100;
-          el.style.setProperty('--mouse-x', x + '%');
-          el.style.setProperty('--mouse-y', y + '%');
+      if (canvas && ctx && !still) {
+        type Mote = { x: number; y: number; r: number; v: number; sway: number; a: number; warm: boolean };
+        let W = 0, H = 0, motes: Mote[] = [], frame = 0;
+
+        const setup = () => {
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          W = canvas.width = window.innerWidth * dpr;
+          H = canvas.height = window.innerHeight * dpr;
+          motes = Array.from({ length: 44 }, () => ({
+            x: Math.random() * W, y: Math.random() * H,
+            r: (0.6 + Math.random() * 1.6) * dpr, v: (0.07 + Math.random() * 0.22) * dpr,
+            sway: Math.random() * Math.PI * 2, a: 0.15 + Math.random() * 0.45, warm: Math.random() < 0.3,
+          }));
+        };
+
+        const draw = () => {
+          ctx.clearRect(0, 0, W, H);
+          for (const m of motes) {
+            m.y += m.v; m.sway += 0.01; m.x += Math.sin(m.sway) * 0.15;
+            if (m.y > H + 4) { m.y = -4; m.x = Math.random() * W; }
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+            ctx.fillStyle = m.warm ? `rgba(230,184,92,${m.a})` : `rgba(235,229,213,${m.a * 0.7})`;
+            ctx.fill();
+          }
+          frame = requestAnimationFrame(draw);
+        };
+
+        setup();
+        draw();
+        window.addEventListener('resize', setup);
+        // Sin pestaña visible no hay nada que animar.
+        document.addEventListener('visibilitychange', () => {
+          cancelAnimationFrame(frame);
+          if (!document.hidden) draw();
         });
-      });
+      }
     </script>
   </body>
 </html>

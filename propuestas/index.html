@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuestas · bio-link</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0e0e10; --text: #ececee; --muted: #9a9aa3; --line: rgba(255,255,255,0.1); }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Geist', system-ui, sans-serif; padding: 32px 16px 48px; }
+  header { max-width: 1720px; margin: 0 auto 24px; }
+  h1 { font-size: 22px; font-weight: 600; }
+  header p { color: var(--muted); margin-top: 6px; font-size: 15px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(390px, 1fr)); gap: 24px; max-width: 1720px; margin: 0 auto; }
+  .card h2 { font-size: 16px; font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; }
+  .card h2 a { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .card h2 a:hover { color: var(--text); }
+  .card p { color: var(--muted); font-size: 14px; margin: 4px 0 12px; line-height: 1.45; min-height: 2.9em; }
+  iframe { width: 100%; height: 820px; border: 1px solid var(--line); border-radius: 18px; background: #000; display: block; }
+  @media (max-width: 440px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>4 direcciones para el bio-link</h1>
+  <p>Cada mockup usa tu contenido real. Lo que está en vivo (ahora suena, jugando ahora, top del mes, heatmap) son datos de ejemplo. Toca las pestañas: son interactivas.</p>
+</header>
+<div class="grid">
+  <section class="card"><h2>Elegida · Farol v2 <a href="5-farol-v2.html" target="_blank">abrir ↗</a></h2>
+    <p>Farol como base, con la luz de la Memory Card, la escritura de Cartucho y el @handle de Lado B.</p>
+    <iframe src="5-farol-v2.html" title="Farol v2"></iframe></section>
+  <section class="card"><h2>1 · Memory Card <a href="1-memory-card.html" target="_blank">abrir ↗</a></h2>
+    <p>El navegador de la memory card de la PS2. Torres de luz al fondo, tres partidas guardadas.</p>
+    <iframe src="1-memory-card.html" title="Memory Card"></iframe></section>
+  <section class="card"><h2>2 · Farol <a href="2-farol.html" target="_blank">abrir ↗</a></h2>
+    <p>Un diario a la luz de un farol, en la oscuridad de Hollow Knight. Polvo que cae, trazo fino.</p>
+    <iframe src="2-farol.html" title="Farol"></iframe></section>
+  <section class="card"><h2>3 · Cartucho <a href="3-cartucho.html" target="_blank">abrir ↗</a></h2>
+    <p>Pantalla de pausa de un RPG de 16 bits. Diálogo, cursor ▶ e inventario.</p>
+    <iframe src="3-cartucho.html" title="Cartucho"></iframe></section>
+  <section class="card"><h2>4 · Lado B <a href="4-lado-b.html" target="_blank">abrir ↗</a></h2>
+    <p>Las notas interiores de un disco. Cálido como Claude, la carátula manda como en Spotify.</p>
+    <iframe src="4-lado-b.html" title="Lado B"></iframe></section>
+</div>
+</body>
+</html>

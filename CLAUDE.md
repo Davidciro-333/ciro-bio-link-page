@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guía para trabajar en este repositorio. El proyecto es un **bio-link personal** (página de enlaces estilo Linktree) para David Ciro, con widgets en vivo de Spotify, PlayStation y GitHub, y un diseño "Deep Space / glassmorphism".
+Guía para trabajar en este repositorio. El proyecto es un **bio-link personal** (página de enlaces estilo Linktree) para David Ciro, con widgets en vivo de Spotify, PlayStation y GitHub, y un diseño **"Farol"** (un diario a la luz de un farol, en la oscuridad). El contrato visual vive en [`DESIGN.md`](DESIGN.md): **léelo antes de tocar cualquier estilo**.
 
 ## Stack
 
@@ -26,11 +26,13 @@ Todos desde la raíz:
 ## Estructura
 
 ```
-profile_design_system.json   ← FUENTE DE VERDAD del contenido (perfil, enlaces, colores base)
+DESIGN.md                    ← CONTRATO VISUAL (tokens, tipografía, componentes, movimiento, prohibiciones)
+profile_design_system.json   ← FUENTE DE VERDAD del contenido (perfil, handle, frase, enlaces)
 astro.config.mjs             ← static + adapter Vercel + Tailwind
 src/
 ├── lib/
 │   ├── spotify.ts             ← getAccessToken() compartido (refresh-token flow de Spotify)
+│   ├── client.ts              ← utilidades de navegador para los widgets (escapeHtml, timeAgo, setEntryMeta, iconos)
 │   ├── playstation.ts         ← getPsnAuthorization() con cache de token en memoria (solo dev)
 │   └── psn-cache.ts           ← lee el Gist donde el job de Actions publica el estado de PSN
 ├── pages/
@@ -39,14 +41,16 @@ src/
 │   └── api/                    ← endpoints SSR (prerender=false), corren como funciones en Vercel
 │       ├── now-playing.ts       ← canción actual de Spotify
 │       ├── recently-played.ts   ← últimas 5 canciones de Spotify
+│       ├── top-tracks.ts        ← 5 canciones más escuchadas del mes (necesita scope user-top-read)
 │       ├── song-search.ts       ← búsqueda de canciones (recomendador)
 │       ├── recommend-song.ts    ← añade la canción recomendada a la playlist + avisa por Telegram
 │       ├── psn-now-playing.ts   ← juego actual + presencia (PlayStation)
 │       ├── psn-recently-played.ts ← últimos juegos jugados (PlayStation)
 │       └── github-activity.ts   ← repos recientes + perfil (GitHub)
 ├── layouts/
-│   └── Layout.astro          ← <html>, fuentes, orbes de fondo, estrellas, cursor glow, init de tema
+│   └── Layout.astro          ← <html>, fuentes, canvas de polvo y niebla de fondo
 ├── components/
+│   ├── Journal.astro          ← "Mi diario": tablist Música / Juegos / Código con un slot por entrada
 │   ├── LinkButton.astro
 │   ├── SocialIcons.astro
 │   ├── SpotifyCard.astro      ← "Ahora escuchando" con barra de progreso en vivo
@@ -55,10 +59,9 @@ src/
 │   ├── PlayStationRecentlyPlayedCard.astro
 │   ├── GitHubCard.astro       ← proyectos recientes (repos por push) + repos/seguidores
 │   ├── RecommendSongCard.astro ← buscador para que un visitante recomiende una canción
-│   ├── ThemeToggle.astro
 │   └── icons/*.astro          ← SVGs inline (instagram, facebook, github, linkedin, whatsapp)
 ├── styles/
-│   └── global.css            ← TODO el CSS, variables por tema/paleta
+│   └── global.css            ← TODO el CSS: tokens de DESIGN.md + componentes
 └── assets/
     └── profile-pic.png       ← optimizada vía astro:assets (<Image />)
 public/
@@ -68,6 +71,8 @@ scripts/
 └── psn-fetch.mjs            ← obtiene el estado de PSN y lo publica en el Gist de cache
 .github/workflows/
 └── psn-cache.yml            ← cron cada 15 min que corre psn-fetch.mjs fuera de Vercel
+docs/design/                 ← design-contract.md (decisiones) + implementation-handoff.md
+propuestas/                  ← mockups HTML de las 4 direcciones + Farol v2 (no entran en el build)
 ```
 
 ## Convenciones importantes
@@ -75,19 +80,20 @@ scripts/
 ### Contenido = `profile_design_system.json`
 El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social_icons_bottom`) se leen desde `profile_design_system.json` en la raíz. **Para cambiar enlaces, nombre o título, edita ese JSON, no los `.astro`.** `index.astro` lo importa y mapea `main_links` a `<LinkButton>`.
 
-### Temas y paletas (CSS variables)
-- El tema (`dark`/`light`) y la paleta viven como atributos en `<html>`: `data-theme` y `data-palette`.
-- Se inicializan con un script inline en `Layout.astro` (lee `localStorage`, con fallback a `prefers-color-scheme`) **antes** del render para evitar flash.
-- `ThemeToggle.astro` alterna el tema y persiste en `localStorage`. Usa la clase temporal `.theme-transitioning` + `void html.offsetHeight` para forzar una transición suave.
-- Todo el estilado se hace con **CSS custom properties** (`--bg`, `--surface`, `--text`, `--accent-*`, etc.) definidas por selector `html[data-theme=...][data-palette=...]` en `global.css`. Al añadir estilos, usa estas variables en vez de colores fijos.
-- Paletas existentes: **`silver`** (default) y **`obsidian`**. Cada una tiene variante `dark` y `light`.
-- El JSON `theme` (colores hex dark/light) es heredado/base; la implementación real de color está en `global.css`.
+### Diseño "Farol" (CSS variables)
+- **Solo tema oscuro.** No hay toggle, ni `data-theme`, ni paletas alternativas (se eliminaron el 2026-10-04).
+- Todo el color sale de los tokens de `:root` en `global.css` (`--bg`, `--surface`, `--ink-line`, `--text`, `--muted`, `--lamp`, `--glow`). **Un solo acento: `--lamp` (ámbar).** No añadir colores fijos ni otros acentos; el verde de Spotify y el azul de PlayStation no se usan en la interfaz.
+- Tipografía: Cormorant Garamond (nombre, títulos, enlaces) + Alegreya Sans (texto). Mínimo 13px.
+- Los widgets viven dentro de `Journal.astro` ("Mi diario"): una entrada abierta a la vez, con navegación por teclado (flechas, Inicio, Fin). Cada widget actualiza el texto de su entrada con `setEntryMeta()` ("sonando ahora", "desconectado", "171 este mes").
+- Cada widget tiene estado de carga (esqueletos `.sk` que respiran), vacío y error. Nunca el texto "Cargando...".
+- Todo lo animado se apaga con `prefers-reduced-motion`.
 
 ### Integración con Spotify (endpoints SSR)
 - `now-playing.ts` y `recently-played.ts` llevan `export const prerender = false;` (se ejecutan como funciones serverless en Vercel, no se prerenderizan pese a `output: 'static'`).
 - Ambos obtienen un access token mediante **refresh token flow** (`getAccessToken()` está duplicado en los dos archivos).
 - El cliente (`SpotifyCard.astro`) hace polling: `now-playing` cada **35 s**, y anima la barra de progreso localmente con un `setInterval` de 1 s entre fetches. `RecentlyPlayedCard` se refresca cada ~5 min.
-- Los widgets se hidratan por `<script>` que reescribe `innerHTML`; el HTML inicial es un estado de "Cargando...".
+- Los widgets se hidratan por `<script>` que reescribe `innerHTML` (siempre pasando el texto por `escapeHtml()`); el HTML inicial es un esqueleto de carga.
+- `RecentlyPlayedCard` tiene dos vistas: *Últimas* y *Más escuchados del mes*. La segunda sale de `/api/top-tracks`, que necesita el scope **`user-top-read`**: si el token no lo tiene, el endpoint responde `{ available: false }` y la pestaña no se muestra.
 
 ### Integración con PlayStation (endpoints SSR + `psn-api`)
 - No existe API oficial de Sony; se usa `psn-api` (API interna de PSN) autenticando con un **token NPSSO**.
@@ -147,7 +153,7 @@ Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 | :--- | :--- | :--- |
 | `SPOTIFY_CLIENT_ID` | Sí | Spotify |
 | `SPOTIFY_CLIENT_SECRET` | Sí | Spotify |
-| `SPOTIFY_REFRESH_TOKEN` | Sí | Spotify — necesita el scope `playlist-modify-public` para el recomendador |
+| `SPOTIFY_REFRESH_TOKEN` | Sí | Spotify — necesita los scopes `playlist-modify-public` (recomendador) y `user-top-read` (top del mes) |
 | `SPOTIFY_PLAYLIST_ID` | Sí (recomendador) | Playlist destino de las canciones recomendadas |
 | `TELEGRAM_BOT_TOKEN` | No | Aviso de nueva recomendación |
 | `TELEGRAM_CHAT_ID` | No | Aviso de nueva recomendación |
@@ -170,12 +176,12 @@ Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 4. Actualiza el secret del repo: `gh secret set PSN_NPSSO --repo Davidciro-333/ciro-bio-link-page` (y el `.env` local si quieres el fallback en dev). **No hace falta redeploy**: el sitio lee del Gist, no de PSN.
 
 ### Efectos visuales
-`Layout.astro` genera 55 "estrellas" por JS y aplica un efecto de "cursor glow" local (variables `--mouse-x`/`--mouse-y` por elemento) sobre `.link-btn`, `.widget` y `.social-icon`. Los orbes de fondo (`.orb-1/2/3`) son divs con blur.
+`Layout.astro` dibuja en un canvas fijo 44 motas de polvo que caen despacio (se pausa con la pestaña oculta y no corre con movimiento reducido) y una niebla inferior. En la cabecera, un halo ámbar respira detrás del retrato, la frase se escribe sola y el ornamento se dibuja al cargar. Detalle y tiempos en DESIGN.md §7.
 
 ## Notas
 
 - El `README.md` es el genérico de Astro y **no** describe este proyecto; usa este CLAUDE.md.
-- Hay archivos sueltos en la raíz (`proposal-1-deep-space-v2.html`, `tweaks-panel.jsx`) que son bocetos/experimentos de diseño, no forman parte del build de Astro.
+- Hay archivos sueltos en la raíz (`proposal-1-deep-space-v2.html`, `tweaks-panel.jsx`) que son bocetos del diseño anterior, no forman parte del build de Astro.
 - Deploy: Vercel (build estático + funciones para los endpoints `/api/*`).
 
 ## Roadmap

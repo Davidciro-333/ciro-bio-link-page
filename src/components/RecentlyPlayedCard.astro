@@ -1,150 +1,166 @@
 ---
+/**
+ * Lista de canciones con dos vistas: "Últimas" (historial reciente) y
+ * "Más escuchados del mes" (solo si /api/top-tracks está disponible).
+ * Cada fila con id reproduce una muestra en el mini-player de Spotify.
+ */
 ---
 
-<div id="recently-played-card" class="widget widget-last">
-  <div class="last-label">Últimas escuchadas</div>
-  <div id="rp-list" class="track-list">
-    <div class="track-item">
-      <div class="track-cover" style="background:var(--surface);"></div>
-      <div class="track-info"><div class="track-title" style="color:var(--text-muted);">Cargando...</div></div>
-    </div>
+<div id="recently-played-card">
+  <div class="switch" role="tablist" aria-label="Canciones" id="rp-switch">
+    <button role="tab" type="button" aria-selected="true" data-view="recent" id="rp-tab-recent" aria-controls="rp-list">Últimas</button>
+    <button role="tab" type="button" aria-selected="false" data-view="top" id="rp-tab-top" aria-controls="rp-list" hidden>Más escuchados del mes</button>
   </div>
-  <div id="sp-mini-wrap" class="sp-mini-wrap" style="display:none;">
-    <div class="sp-mini-hint">Muestra de ~30 s · canción completa con Spotify Premium abierto en el navegador</div>
+  <div id="rp-list" class="rows" role="tabpanel" aria-labelledby="rp-tab-recent" aria-busy="true">
+    {Array.from({ length: 5 }).map(() => (
+      <div class="row">
+        <span class="row-cover sk"></span>
+        <div><span class="sk sk-line" style="display:block;width:70%"></span><span class="sk sk-line" style="display:block;width:45%;margin-top:8px"></span></div>
+        <span></span>
+      </div>
+    ))}
+  </div>
+  <div id="sp-mini-wrap" class="mini-player" hidden>
+    <p class="note" style="font-size:13px;margin-bottom:8px">Muestra de unos 30 s. Con Spotify Premium abierto en el navegador suena completa.</p>
     <div id="sp-mini-embed"></div>
   </div>
 </div>
 
 <script>
-  const PLAY_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-  const OPEN_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>`;
+  import { escapeHtml, timeAgo, ICONS } from '../lib/client';
 
-  // --- Spotify iframe Embed API (mini-player compartido) ---
-  // Definimos el callback ANTES de inyectar el script para evitar el race.
+  type Track = { id: string | null; title: string; artist: string; albumImageUrl: string; songUrl: string | null; playedAt?: string };
+
+  const list = document.getElementById('rp-list')!;
+  const tabTop = document.getElementById('rp-tab-top') as HTMLButtonElement;
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('#rp-switch [role="tab"]'));
+  let view: 'recent' | 'top' = 'recent';
+  let recent: Track[] | null = null;
+  let top: Track[] = [];
+
+  // --- Mini-player (Spotify iframe Embed API) ---
+  // El callback se define ANTES de inyectar el script para evitar la carrera.
   let resolveApi: (api: any) => void;
   const spotifyApi = new Promise<any>((res) => { resolveApi = res; });
-  (window as any).onSpotifyIframeApiReady = (IFrameAPI: any) => resolveApi(IFrameAPI);
-
+  (window as any).onSpotifyIframeApiReady = (api: any) => resolveApi(api);
   let apiInjected = false;
-  function ensureApi() {
-    if (apiInjected) return;
-    apiInjected = true;
-    const s = document.createElement('script');
-    s.src = 'https://open.spotify.com/embed/iframe-api/v1';
-    s.async = true;
-    document.body.appendChild(s);
-  }
-
   let controller: any = null;
+
   async function playTrack(id: string) {
-    ensureApi();
+    if (!apiInjected) {
+      apiInjected = true;
+      const s = document.createElement('script');
+      s.src = 'https://open.spotify.com/embed/iframe-api/v1';
+      s.async = true;
+      document.body.appendChild(s);
+    }
+    const wrap = document.getElementById('sp-mini-wrap')!;
+    wrap.hidden = false;
     const uri = 'spotify:track:' + id;
-    const wrap = document.getElementById('sp-mini-wrap');
-    if (wrap) wrap.style.display = 'block';
-
-    const IFrameAPI = await spotifyApi;
-
+    const api = await spotifyApi;
     if (!controller) {
       const target = document.getElementById('sp-mini-embed');
       if (!target) return;
-      IFrameAPI.createController(
-        target,
-        { uri, width: '100%', height: 80 },
-        (ctrl: any) => {
-          controller = ctrl;
-          controller.play();
-        }
-      );
+      api.createController(target, { uri, width: '100%', height: 80 }, (ctrl: any) => {
+        controller = ctrl;
+        controller.play();
+      });
     } else {
       controller.loadUri(uri);
       controller.play();
     }
-
-    if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  function timeAgo(playedAt: string): string {
-    const diff = Math.floor((Date.now() - new Date(playedAt).getTime()) / 1000);
-    if (diff < 60) return 'ahora';
-    if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
-    if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
-    return `hace ${Math.floor(diff / 86400)}d`;
+  function row(t: Track): string {
+    const title = escapeHtml(t.title);
+    const cover = `
+      <span class="row-cover-wrap">
+        <img class="row-cover" src="${escapeHtml(t.albumImageUrl)}" alt="" width="44" height="44" loading="lazy" />
+        ${t.id ? `<span class="row-play">${ICONS.play}</span>` : ''}
+      </span>`;
+    const info = `<div class="min"><div class="row-title">${title}</div><div class="row-sub">${escapeHtml(t.artist)}</div></div>`;
+    const when = t.playedAt ? `<span class="row-meta">${timeAgo(t.playedAt)}</span>` : '';
+    const open = t.songUrl
+      ? `<a class="row-open" href="${escapeHtml(t.songUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${title} en Spotify">${ICONS.open}</a>`
+      : '';
+
+    // Con id la fila reproduce una muestra; sin id solo enlaza a Spotify.
+    if (t.id) {
+      return `<div class="row" role="button" tabindex="0" data-id="${escapeHtml(t.id)}" aria-label="Escuchar una muestra de ${title}">
+        ${cover}${info}<span class="row-end">${when}${open}</span></div>`;
+    }
+    return `<a class="row" href="${escapeHtml(t.songUrl ?? '#')}" target="_blank" rel="noopener noreferrer">${cover}${info}${when}</a>`;
   }
 
-  function escapeHtml(s: string): string {
-    return String(s ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function render() {
+    const items = view === 'top' ? top : recent;
+    list.setAttribute('aria-labelledby', view === 'top' ? 'rp-tab-top' : 'rp-tab-recent');
+    if (!items) return;
+    list.removeAttribute('aria-busy');
+    if (items.length === 0) {
+      list.innerHTML = `<p class="note">Todavía no hay canciones por aquí.</p>`;
+      return;
+    }
+    list.innerHTML = items.map(row).join('');
+    list.querySelectorAll<HTMLElement>('.row[data-id]').forEach((el) => {
+      const id = el.dataset.id!;
+      el.addEventListener('click', () => playTrack(id));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playTrack(id); }
+      });
+    });
+    // "Abrir en Spotify" no debe disparar la muestra de la fila.
+    list.querySelectorAll('.row-open').forEach((a) => a.addEventListener('click', (e) => e.stopPropagation()));
   }
 
-  async function loadRecentlyPlayed() {
-    const list = document.getElementById('rp-list');
-    if (!list) return;
+  function select(tab: HTMLButtonElement, focus = false) {
+    view = tab.dataset.view as 'recent' | 'top';
+    for (const t of tabs) {
+      t.setAttribute('aria-selected', String(t === tab));
+      t.tabIndex = t === tab ? 0 : -1;
+    }
+    if (focus) tab.focus();
+    render();
+  }
 
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => select(tab));
+    tab.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const visible = tabs.filter((t) => !t.hidden);
+      const i = visible.indexOf(tab);
+      select(visible[(i + (e.key === 'ArrowRight' ? 1 : -1) + visible.length) % visible.length], true);
+    });
+  });
+  tabs[1].tabIndex = -1;
+
+  async function loadRecent() {
     try {
-      const response = await fetch('/api/recently-played');
-      const tracks = await response.json();
-
-      if (!Array.isArray(tracks) || tracks.length === 0) {
-        list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Sin historial reciente.</p>`;
-        return;
-      }
-
-      const rows = tracks.map((track: any) => {
-        const title = escapeHtml(track.title);
-        const artist = escapeHtml(track.artist);
-        const cover = `
-          <div class="track-cover-wrap">
-            <img class="track-cover" src="${track.albumImageUrl}" alt="${title}" width="36" height="36" loading="lazy" />
-            ${track.id ? `<span class="track-play">${PLAY_ICON}</span>` : ''}
-          </div>`;
-        const openLink = track.songUrl
-          ? `<a class="track-open" href="${track.songUrl}" target="_blank" rel="noopener noreferrer" title="Abrir en Spotify" aria-label="Abrir en Spotify">${OPEN_ICON}</a>`
-          : '';
-
-        // Con id → fila reproducible; sin id → solo enlace a Spotify.
-        if (track.id) {
-          return `
-            <div class="track-item sp-playable" role="button" tabindex="0" data-id="${escapeHtml(track.id)}" aria-label="Reproducir ${title}">
-              ${cover}
-              <div class="track-info">
-                <div class="track-title">${title}</div>
-                <div class="track-artist">${artist}</div>
-              </div>
-              ${openLink}
-              <span class="track-time">${timeAgo(track.playedAt)}</span>
-            </div>`;
-        }
-
-        return `
-          <a href="${track.songUrl}" target="_blank" rel="noopener noreferrer" class="track-item" style="text-decoration:none;">
-            ${cover}
-            <div class="track-info">
-              <div class="track-title">${title}</div>
-              <div class="track-artist">${artist}</div>
-            </div>
-            <span class="track-time">${timeAgo(track.playedAt)}</span>
-          </a>`;
-      }).join('');
-
-      list.innerHTML = rows;
-
-      list.querySelectorAll<HTMLElement>('.sp-playable').forEach((el) => {
-        const id = el.dataset.id;
-        if (!id) return;
-        el.addEventListener('click', () => playTrack(id));
-        el.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); playTrack(id); }
-        });
-      });
-      // El enlace "abrir en Spotify" no debe disparar la reproducción de la fila.
-      list.querySelectorAll('.track-open').forEach((a) => {
-        a.addEventListener('click', (e) => e.stopPropagation());
-      });
+      const res = await fetch('/api/recently-played');
+      const data = await res.json();
+      recent = Array.isArray(data) ? data : [];
+      if (view === 'recent') render();
     } catch {
-      list.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">No se pudo cargar el historial.</p>`;
+      if (view === 'recent') list.innerHTML = `<p class="note">No pude leer el historial ahora mismo.</p>`;
     }
   }
 
-  loadRecentlyPlayed();
-  setInterval(loadRecentlyPlayed, 5 * 60 * 1000);
+  async function loadTop() {
+    try {
+      const res = await fetch('/api/top-tracks');
+      const data = await res.json();
+      if (data.available && Array.isArray(data.tracks)) {
+        top = data.tracks;
+        tabTop.hidden = false;
+      }
+    } catch {
+      // Sin top del mes: la pestaña sigue oculta.
+    }
+  }
+
+  loadRecent();
+  loadTop();
+  setInterval(loadRecent, 5 * 60 * 1000);
 </script>

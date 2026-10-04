@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartucho · David Ciro</title>
+<!--
+  Dirección 3 · CARTUCHO
+  Concepto: tu página como la pantalla de pausa de un RPG de 16 bits.
+  Un cuadro de diálogo te presenta, el menú tiene cursor ▶ y tu música,
+  tus juegos y tu código son el inventario.
+  Form desde el contenido: el heatmap de GitHub ya ES pixel art; la barra de
+  progreso de una canción ya ES una barra de vida. El estilo sale de ahí.
+  El pixel va en los detalles (bordes, cursor, avatar, tipografía de títulos);
+  el texto largo usa una sans legible.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Silkscreen&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15131d;
+    --panel: #201c2c;
+    --panel-2: #2a2539;
+    --edge: #3d3654;
+    --edge-hi: #5b5278;
+    --text: #f3ead9;
+    --muted: #a69fb6;
+    --coin: #ffcc4d;
+    --coin-dark: #b8862a;
+    --px: 4px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { background: var(--bg); }
+  body { font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; color: var(--text); min-height: 100dvh;
+    background-color: var(--bg);
+    background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size: 8px 8px; }
+  a { color: inherit; text-decoration: none; }
+  img.px { image-rendering: pixelated; }
+
+  /* Caja con borde pixelado (esquinas en escalón, sin border-radius) */
+  .box { position: relative; background: var(--panel); padding: 18px;
+    box-shadow:
+      0 calc(var(--px) * -1) 0 0 var(--edge), 0 var(--px) 0 0 var(--edge),
+      calc(var(--px) * -1) 0 0 0 var(--edge), var(--px) 0 0 0 var(--edge),
+      inset 0 var(--px) 0 0 rgba(255,255,255,0.05),
+      0 calc(var(--px) * 2) 0 0 rgba(0,0,0,0.35); }
+
+  .wrap { max-width: 460px; margin: 0 auto; padding: 40px 20px 64px; }
+
+  /* Cuadro de diálogo */
+  .dialog { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: start; }
+  .portrait { width: 96px; height: 96px; background: var(--panel-2);
+    box-shadow: 0 0 0 var(--px) var(--edge-hi); }
+  .portrait img { width: 100%; height: 100%; display: block; }
+  .who { font-family: 'Pixelify Sans', monospace; font-weight: 600; font-size: 26px; line-height: 1; color: var(--coin); }
+  .role { font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); margin-top: 6px; text-transform: uppercase; }
+  .say { margin-top: 12px; font-size: 16px; line-height: 1.55; min-height: 3.1em; }
+  .say::after { content: '▼'; font-size: 12px; color: var(--coin); margin-left: 6px; animation: nudge .8s steps(2) infinite; }
+  .say.typing::after { content: ''; }
+
+  .socials { display: flex; gap: 12px; margin-top: 22px; justify-content: center; }
+  .socials a { width: 44px; height: 44px; display: grid; place-items: center; background: var(--panel); color: var(--muted);
+    box-shadow: 0 0 0 var(--px) var(--edge); transition: transform .12s steps(2), color .12s; }
+  .socials a:hover, .socials a:focus-visible { color: var(--coin); transform: translateY(-4px); outline: none; }
+
+  /* Menú con cursor ▶ */
+  .menu { margin-top: 30px; padding: 10px 18px; }
+  .menu a { display: flex; align-items: center; gap: 10px; padding: 12px 0; font-family: 'Pixelify Sans', monospace; font-size: 20px; }
+  .menu a + a { border-top: 2px dashed var(--edge); }
+  .menu .cur { width: 14px; color: var(--coin); visibility: hidden; font-size: 14px; }
+  .menu a:hover .cur, .menu a:focus-visible .cur { visibility: visible; animation: nudge .5s steps(2) infinite; }
+  .menu a:focus-visible { outline: none; color: var(--coin); }
+  .menu a:hover { color: var(--coin); }
+  .menu .hint { margin-left: auto; font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); }
+  .menu a.main { color: var(--coin); }
+  .menu a.main .cur { visibility: visible; }
+
+  /* Inventario con pestañas */
+  .tabs { display: flex; gap: 10px; margin-top: 40px; }
+  .tabs button { flex: 1; appearance: none; border: 0; cursor: pointer; padding: 10px 6px; font-family: 'Silkscreen', monospace; font-size: 13px;
+    color: var(--muted); background: var(--panel); box-shadow: 0 0 0 var(--px) var(--edge); transition: transform .1s steps(2); }
+  .tabs button[aria-selected="true"] { color: var(--bg); background: var(--coin); box-shadow: 0 0 0 var(--px) var(--coin-dark); transform: translateY(-4px); }
+  .tabs button:focus-visible { outline: 2px solid var(--text); outline-offset: 6px; }
+  .room { margin-top: 18px; }
+  .room[hidden] { display: none; }
+
+  .h { font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .h .live { width: 8px; height: 8px; background: var(--coin); animation: blink 1s steps(2) infinite; }
+  .feat { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; margin-top: 12px; }
+  .feat img { width: 72px; height: 72px; display: block; box-shadow: 0 0 0 var(--px) var(--edge-hi); }
+  .feat .t { font-family: 'Pixelify Sans', monospace; font-size: 20px; line-height: 1.15; }
+  .feat .s { color: var(--muted); font-size: 15px; margin-top: 2px; }
+
+  /* Barra de vida segmentada */
+  .hp { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; margin-top: 16px; padding: 3px; background: #0d0b13; box-shadow: 0 0 0 2px var(--edge); }
+  .hp i { height: 8px; background: #2c2640; }
+  .hp i.on { background: var(--coin); box-shadow: inset 0 -2px 0 var(--coin-dark); }
+  .hp-t { display: flex; justify-content: space-between; font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .sub-tabs { display: flex; gap: 16px; margin-top: 20px; font-family: 'Silkscreen', monospace; font-size: 12px; }
+  .sub-tabs button { appearance: none; background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; padding: 4px 0; }
+  .sub-tabs button[aria-selected="true"] { color: var(--coin); }
+  .sub-tabs button[aria-selected="true"]::before { content: '▶ '; }
+  .list { margin-top: 8px; }
+  .item { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 0; }
+  .item img { width: 40px; height: 40px; display: block; box-shadow: 0 0 0 2px var(--edge); }
+  .item .t { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .s { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .m { font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); }
+  .min { min-width: 0; }
+
+  .ask { margin-top: 22px; }
+  .ask label { font-family: 'Pixelify Sans', monospace; font-size: 18px; color: var(--coin); display: block; }
+  .ask p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+  .ask .field { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; background: #0d0b13; box-shadow: 0 0 0 2px var(--edge); }
+  .ask .field:focus-within { box-shadow: 0 0 0 2px var(--coin); }
+  .ask .field span { color: var(--coin); font-family: 'Silkscreen', monospace; }
+  .ask input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font: inherit; font-size: 15px; }
+  .ask input:focus { outline: none; }
+  .ask input::placeholder { color: var(--muted); }
+
+  /* Partidas guardadas */
+  .saves { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .save { background: var(--panel-2); padding: 6px; box-shadow: 0 0 0 2px var(--edge); transition: transform .1s steps(2), box-shadow .1s; }
+  .save:hover { transform: translateY(-4px); box-shadow: 0 0 0 2px var(--coin); }
+  .save img { width: 100%; aspect-ratio: 1; display: block; }
+  .save p { font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
+
+  /* Código */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .stat { background: var(--panel-2); padding: 10px; box-shadow: 0 0 0 2px var(--edge); }
+  .stat b { font-family: 'Pixelify Sans', monospace; font-size: 26px; color: var(--coin); display: block; line-height: 1; }
+  .stat span { font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 2px; margin-top: 16px; }
+  .heat i { aspect-ratio: 1; background: #2c2640; }
+  .heat i[data-l="1"] { background: #5a4a2a; }
+  .heat i[data-l="2"] { background: #8a6b2c; }
+  .heat i[data-l="3"] { background: #c99a37; }
+  .heat i[data-l="4"] { background: var(--coin); }
+  .repo { display: flex; justify-content: space-between; gap: 10px; padding: 12px 0; border-top: 2px dashed var(--edge); font-size: 15px; }
+  .repo:first-of-type { margin-top: 16px; }
+  .repo b { font-weight: 700; }
+  .repo .tag { font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .repo .lock { color: var(--coin); }
+
+  footer { margin-top: 44px; display: flex; justify-content: space-between; font-family: 'Silkscreen', monospace; font-size: 12px; color: var(--muted); }
+
+  @keyframes nudge { 50% { transform: translateX(3px); } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes boot { 0% { opacity: 0; clip-path: inset(0 0 100% 0); } 100% { opacity: 1; clip-path: inset(0 0 0 0); } }
+  .boot { animation: boot .45s steps(6) both; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="box dialog boot" aria-label="Presentación">
+    <div class="portrait"><img class="px" src="assets/avatar-pixel.png" alt="David Ciro en pixel art"></div>
+    <div>
+      <h1 class="who" id="name"></h1>
+      <p class="role" id="title"></p>
+      <p class="say typing" id="say" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <nav class="socials boot" style="animation-delay:.15s" id="socials" aria-label="Redes"></nav>
+
+  <nav class="box menu boot" style="animation-delay:.3s" id="menu" aria-label="Enlaces"></nav>
+
+  <div class="tabs boot" style="animation-delay:.45s" role="tablist" aria-label="Inventario">
+    <button role="tab" aria-selected="true" data-room="musica">Música</button>
+    <button role="tab" aria-selected="false" data-room="juegos">Juegos</button>
+    <button role="tab" aria-selected="false" data-room="codigo">Código</button>
+  </div>
+
+  <section class="box room boot" style="animation-delay:.55s" id="r-musica" role="tabpanel"></section>
+  <section class="box room" id="r-juegos" role="tabpanel" hidden></section>
+  <section class="box room" id="r-codigo" role="tabpanel" hidden></section>
+
+  <footer><a href="#">Privacidad</a><span>Datos en vivo: ejemplo</span></footer>
+</main>
+
+<script src="assets/data.js"></script>
+<script>
+  const D = window.CIRO, U = window.CIRO_UTIL, $ = (id) => document.getElementById(id);
+  $('name').textContent = D.profile.name;
+  $('title').textContent = D.profile.title;
+  $('socials').innerHTML = D.socials.map(s => `<a href="${s.url}" aria-label="${s.name}">${U.icon(s.name, 18)}</a>`).join('');
+  $('menu').innerHTML = D.links.map((l, i) =>
+    `<a href="${l.url}" class="${i === 0 ? 'main' : ''}"><span class="cur">▶</span>${l.title}<span class="hint">${i === 0 ? 'START' : 'A'}</span></a>`).join('');
+
+  // Texto del diálogo, letra a letra (instantáneo con reduced motion)
+  const msg = '¡Hola! Escribo código, escucho rock y juego de noche. Elige una opción.';
+  const say = $('say');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { say.textContent = msg; say.classList.remove('typing'); }
+  else { let i = 0; setTimeout(function type() { say.textContent = msg.slice(0, ++i); if (i < msg.length) setTimeout(type, 28); else say.classList.remove('typing'); }, 500); }
+
+  const np = D.nowPlaying, segs = Math.round((np.progressMs / np.durationMs) * 20);
+  const items = (arr, meta) => arr.map(t => `<div class="item"><img src="${t.cover}" alt="">
+    <div class="min"><div class="t">${t.title}</div><div class="s">${t.artist ?? t.sub}</div></div><span class="m">${meta(t)}</span></div>`).join('');
+  $('r-musica').innerHTML = `
+    <div class="h"><span class="live"></span>Sonando ahora</div>
+    <div class="feat"><img src="${np.cover}" alt="${np.album}"><div class="min"><div class="t">${np.title}</div><div class="s">${np.artist}</div></div></div>
+    <div class="hp" aria-hidden="true">${Array.from({ length: 20 }, (_, i) => `<i class="${i < segs ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="hp-t"><span>${U.fmt(np.progressMs)}</span><span>${U.fmt(np.durationMs)}</span></div>
+    <div class="sub-tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-l="recent">Recientes</button>
+      <button role="tab" aria-selected="false" data-l="top">Top del mes</button>
+    </div>
+    <div class="list" id="list">${items(D.recent, t => U.ago(t.at))}</div>
+    <div class="ask"><label for="ask">Recomiéndame una canción</label>
+      <p>La añado a mi playlist. A ver qué me descubres.</p>
+      <div class="field"><span>&gt;</span><input id="ask" type="search" placeholder="Canción o artista"></div></div>`;
+
+  const g = D.nowGaming;
+  $('r-juegos').innerHTML = `
+    <div class="h"><span class="live"></span>Jugando ahora · ${g.platform}</div>
+    <div class="feat"><img src="${g.cover}" alt=""><div class="min"><div class="t">${g.title}</div><div class="s">Desde hace ${g.since}</div></div></div>
+    <div class="h" style="margin-top:22px">Partidas recientes</div>
+    <div class="saves">${D.games.map(x => `<div class="save"><img src="${x.cover}" alt="${x.title}"><p>${U.ago(x.at)}</p></div>`).join('')}</div>`;
+
+  $('r-codigo').innerHTML = `
+    <div class="h">Estadísticas</div>
+    <div class="stats">
+      <div class="stat"><b>${D.github.last30}</b><span>XP / 30 d</span></div>
+      <div class="stat"><b>${D.github.streak}</b><span>Racha</span></div>
+      <div class="stat"><b>${D.github.publicRepos}</b><span>Repos</span></div>
+    </div>
+    <div class="heat">${U.heatmap(26).flat().map(l => `<i data-l="${l}"></i>`).join('')}</div>
+    ${D.repos.map(r => r.private
+      ? `<div class="repo"><b>${r.name}</b><span class="tag lock">Privado</span></div>`
+      : `<a class="repo" href="#"><b>${r.name}</b><span class="tag">${r.lang}</span></a>`).join('')}`;
+
+  document.querySelectorAll('[data-room]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-room]').forEach(x => x.setAttribute('aria-selected', x === b));
+    document.querySelectorAll('.room').forEach(r => {
+      const on = r.id === 'r-' + b.dataset.room; r.hidden = !on;
+      if (on) { r.classList.remove('boot'); void r.offsetWidth; r.classList.add('boot'); }
+    });
+  }));
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-l]'); if (!b) return;
+    document.querySelectorAll('[data-l]').forEach(x => x.setAttribute('aria-selected', x === b));
+    $('list').innerHTML = b.dataset.l === 'top' ? items(D.topMonth.items, () => '') : items(D.recent, t => U.ago(t.at));
+  });
+</script>
+</body>
+</html>
