@@ -22,7 +22,7 @@
 
   <div id="rec-confirm" class="ask-confirm" hidden>
     <div class="row" style="cursor:default">
-      <img id="rec-confirm-cover" class="row-cover" width="44" height="44" alt="" />
+      <span id="rec-confirm-cover" class="row-cover" style="background:var(--surface)"></span>
       <div class="min">
         <div id="rec-confirm-title" class="row-title"></div>
         <div id="rec-confirm-artist" class="row-sub"></div>
@@ -116,9 +116,16 @@
       selectedId = el.dataset.id ?? null;
       if (!selectedId) return;
 
-      const cover = document.getElementById('rec-confirm-cover') as HTMLImageElement;
-      cover.hidden = !el.dataset.cover;
-      if (el.dataset.cover) cover.src = el.dataset.cover;
+      // La portada se crea al elegir: así nunca queda una imagen vacía en la página.
+      const slot = document.getElementById('rec-confirm-cover')!;
+      slot.replaceChildren();
+      if (el.dataset.cover) {
+        const img = new Image(44, 44);
+        img.className = 'row-cover';
+        img.alt = '';
+        img.src = el.dataset.cover;
+        slot.append(img);
+      }
       // dataset devuelve el texto ya des-escapado: textContent lo pinta seguro.
       document.getElementById('rec-confirm-title')!.textContent = el.dataset.name ?? '';
       document.getElementById('rec-confirm-artist')!.textContent = el.dataset.artists ?? '';

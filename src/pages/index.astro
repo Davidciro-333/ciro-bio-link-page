@@ -47,13 +47,13 @@ const entries = [
       <div class="portrait appear">
         <Image src={profilePic} alt={profile.name} width={116} height={116} densities={[1, 2]} loading="eager" />
       </div>
-      <span class="handle appear" style="animation-delay:.15s">{profile.handle}</span>
-      <h1 class="profile-name appear" style="animation-delay:.22s">{profile.name}</h1>
-      <p class="profile-title appear" style="animation-delay:.3s">{profile.title}</p>
-      <p class="profile-line appear" style="animation-delay:.38s">
+      <span class="handle appear" style="animation-delay:.08s">{profile.handle}</span>
+      <h1 class="profile-name appear" style="animation-delay:.14s">{profile.name}</h1>
+      <p class="profile-title appear" style="animation-delay:.2s">{profile.title}</p>
+      <p class="profile-line appear" style="animation-delay:.26s">
         <span class="sr-only">{profile.line}</span><span id="profile-line" data-text={profile.line} aria-hidden="true">{profile.line}</span><span class="caret" aria-hidden="true"></span>
       </p>
-      <div class="appear" style="animation-delay:.46s"><SocialIcons /></div>
+      <div class="appear" style="animation-delay:.32s"><SocialIcons /></div>
     </header>
 
     <svg class="ornament" viewBox="0 0 220 22" aria-hidden="true">
@@ -62,7 +62,7 @@ const entries = [
       <rect class="gem" x="106" y="7" width="8" height="8" transform="rotate(45 110 11)" />
     </svg>
 
-    <nav class="links appear" style="animation-delay:.55s" aria-label="Enlaces">
+    <nav class="links appear" style="animation-delay:.38s" aria-label="Enlaces">
       {mainLinks.map((link, i) => <LinkButton title={link.title} url={link.url} main={i === 0} />)}
     </nav>
 
@@ -104,7 +104,7 @@ const entries = [
       if (i < text.length) setTimeout(write, 38 + Math.random() * 40);
       else setTimeout(() => caret?.remove(), 2400);
     };
-    setTimeout(write, 1100);
+    setTimeout(write, 700);
   } else {
     caret?.remove();
   }

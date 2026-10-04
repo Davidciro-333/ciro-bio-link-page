@@ -17,7 +17,7 @@
 </div>
 
 <script>
-  import { escapeHtml, formatMs, reducedMotion, setEntryMeta, ICONS } from '../lib/client';
+  import { escapeHtml, formatMs, setEntryMeta, ICONS } from '../lib/client';
 
   const card = document.getElementById('spotify-card');
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -34,12 +34,13 @@
     const now = document.getElementById('sp-now');
     const tick = () => {
       const pos = Math.min(progressMs + (Date.now() - fetchedAt), durationMs);
-      if (fill) fill.style.width = `${(pos / durationMs) * 100}%`;
+      if (fill) fill.style.transform = `translateX(${(pos / durationMs) * 100 - 100}%)`;
       if (now) now.textContent = formatMs(pos);
       if (pos >= durationMs) stopTimer();
     };
     tick();
-    if (!reducedMotion()) timer = setInterval(tick, 1000);
+    // Con movimiento reducido el CSS quita la transición: el hilo salta en vez de deslizarse.
+    timer = setInterval(tick, 1000);
   }
 
   async function load() {
