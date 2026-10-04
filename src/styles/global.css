@@ -23,7 +23,7 @@
   /* "Acercar el farol": el borde que se ilumina */
   --glow: 0 0 0 1px rgba(var(--lamp-rgb), 0.55), 0 0 22px rgba(var(--lamp-rgb), 0.16), inset 0 0 18px rgba(var(--lamp-rgb), 0.06);
 
-  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-display: 'Cormorant Garamond Variable', Georgia, serif;
   --font-body: 'Alegreya Sans', system-ui, sans-serif;
 
   --ease: cubic-bezier(0.25, 1, 0.5, 1);

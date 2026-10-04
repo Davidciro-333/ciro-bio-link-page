@@ -49,7 +49,7 @@ Todos los colores van como custom properties en `:root`. No se usan colores fuer
 
 ## 3. Typography
 
-Dos familias, de Google Fonts, cargadas con `display=swap`:
+Dos familias autoalojadas con Fontsource (`@fontsource-variable/cormorant-garamond` y `@fontsource/alegreya-sans`), con `preload` del subset latino:
 
 | Rol | Familia | Pesos |
 | :--- | :--- | :--- |

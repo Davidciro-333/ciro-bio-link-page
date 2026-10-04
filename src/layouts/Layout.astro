@@ -1,5 +1,15 @@
 ---
+import '@fontsource-variable/cormorant-garamond/wght.css';
+import '@fontsource-variable/cormorant-garamond/wght-italic.css';
+import '@fontsource/alegreya-sans/400.css';
+import '@fontsource/alegreya-sans/500.css';
+import '@fontsource/alegreya-sans/700.css';
 import '../styles/global.css';
+// Fuentes alojadas en el propio sitio: ahorra dos conexiones a Google Fonts
+// (DNS + TLS en móvil) y una hoja de estilos que bloqueaba el render.
+// Se precargan las dos que pintan el primer pantallazo (nombre y texto).
+import cormorantLatin from '@fontsource-variable/cormorant-garamond/files/cormorant-garamond-latin-wght-normal.woff2?url';
+import alegreyaLatin from '@fontsource/alegreya-sans/files/alegreya-sans-latin-400-normal.woff2?url';
 
 interface Props {
   title: string;
@@ -21,9 +31,8 @@ const {
     <link rel="icon" type="image/svg+xml" href="/itsciroicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="preload" href={cormorantLatin} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={alegreyaLatin} as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <canvas class="dust" id="dust" aria-hidden="true"></canvas>
