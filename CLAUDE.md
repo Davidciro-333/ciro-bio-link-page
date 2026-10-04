@@ -180,6 +180,7 @@ Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 
 ## Notas
 
+- **Skills de diseño en el repo** (`.claude/skills/`): `impeccable`, `emil-design-eng`, `animate`, `gsap-core` y `reference-design-contract`, para seguir puliendo el Farol también desde Claude Code en la nube. Detalle y licencias en `.claude/skills/README.md`.
 - El `README.md` es el genérico de Astro y **no** describe este proyecto; usa este CLAUDE.md.
 - Hay archivos sueltos en la raíz (`proposal-1-deep-space-v2.html`, `tweaks-panel.jsx`) que son bocetos del diseño anterior, no forman parte del build de Astro.
 - Deploy: Vercel (build estático + funciones para los endpoints `/api/*`).
