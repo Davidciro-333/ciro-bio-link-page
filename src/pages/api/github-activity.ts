@@ -304,7 +304,7 @@ async function reposFromOwned(
   headers: Record<string, string>,
   limit: number
 ): Promise<Card[]> {
-  const url = TOKEN
+  const url = headers.Authorization
     ? 'https://api.github.com/user/repos?sort=pushed&per_page=30&affiliation=owner'
     : `https://api.github.com/users/${USERNAME}/repos?sort=pushed&per_page=30&type=owner`;
   const res = await ghFetch(url, headers);
@@ -363,49 +363,108 @@ function mergeByRecency(...sources: Card[][]): Card[] {
   );
 }
 
-export async function GET() {
+type Payload = {
+  repos: Card[];
+  profile: { publicRepos: number; followers: number } | null;
+  activity: Activity | null;
+};
+
+/**
+ * Arma la respuesta con o sin token. `unauthorized` indica que GitHub rechazó
+ * el token (401): pasa cuando caduca o se revoca, y entonces responde 401 a
+ * TODO lo que lo lleve — incluso a endpoints públicos —, así que cada fuente
+ * vuelve vacía y el widget se queda en "Sin repos públicos".
+ */
+async function buildPayload(
+  token: string | undefined
+): Promise<{ payload: Payload; unauthorized: boolean }> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'bio-link',
   };
-  if (TOKEN) headers.Authorization = `Bearer ${TOKEN}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const LIMIT = 5;
+
+  // Las dos fuentes se piden siempre y se mezclan: contribuciones (única que
+  // ve los repos de organizaciones) + repos propios (única que ve los
+  // privados). Con LIMIT en cada una la mezcla tendría poco material, así que
+  // se piden más y se recorta al final.
+  const POOL = LIMIT * 3;
+  const [primary, owned, profileRes, activityStats] = await Promise.all([
+    token
+      ? reposFromContributions(token, POOL)
+      : reposFromActivity(headers, POOL),
+    reposFromOwned(headers, POOL),
+    ghFetch(`https://api.github.com/users/${USERNAME}`, headers),
+    token ? fetchActivity(token).catch(() => null) : Promise.resolve(null),
+  ]);
+
+  if (token && profileRes.status === 401) {
+    return { payload: { repos: [], profile: null, activity: null }, unauthorized: true };
+  }
+
+  // Si la fuente principal viene vacía (sin token, o GraphQL caído) se recurre
+  // a la actividad pública, que al menos cubre los últimos ~90 días.
+  const contributed =
+    primary.length > 0 ? primary : await reposFromActivity(headers, POOL);
+
+  const repos = mergeByRecency(contributed, owned).slice(0, LIMIT);
+
+  const profileRaw: GitHubProfile | null = profileRes.ok
+    ? await profileRes.json()
+    : null;
+  const profile = profileRaw
+    ? { publicRepos: profileRaw.public_repos, followers: profileRaw.followers }
+    : null;
+
+  return { payload: { repos, profile, activity: activityStats }, unauthorized: false };
+}
+
+// Memoria del proceso, igual que la cache de PSN. La tarjeta refresca cada
+// 10 min y sin token cada visita gasta ~18 llamadas de un límite de 60/h por
+// IP, compartido con todo lo que corre en esas IPs de Vercel.
+let memo: { data: Payload; at: number } | null = null;
+const MEMO_MS = 5 * 60_000;
+
+// Último estado con repos, sin caducidad: mejor una lista de hace un rato que
+// un widget vacío porque GitHub nos limitó o el token caducó.
+let lastGood: Payload | null = null;
+
+export async function GET() {
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(status === 200
+          ? { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' }
+          : {}),
+      },
+    });
+
+  if (memo && Date.now() - memo.at < MEMO_MS) return json(memo.data);
 
   try {
-    const LIMIT = 5;
+    let { payload, unauthorized } = await buildPayload(TOKEN);
 
-    // Las dos fuentes se piden siempre y se mezclan: contribuciones (única que
-    // ve los repos de organizaciones) + repos propios (única que ve los
-    // privados). Con LIMIT en cada una la mezcla tendría poco material, así que
-    // se piden más y se recorta al final.
-    const POOL = LIMIT * 3;
-    const [primary, owned, profileRes, activityStats] = await Promise.all([
-      TOKEN
-        ? reposFromContributions(TOKEN, POOL)
-        : reposFromActivity(headers, POOL),
-      reposFromOwned(headers, POOL),
-      ghFetch(`https://api.github.com/users/${USERNAME}`, headers),
-      TOKEN ? fetchActivity(TOKEN).catch(() => null) : Promise.resolve(null),
-    ]);
+    if (unauthorized) {
+      // Sale en los logs de Vercel: es la única pista de que hay que renovarlo.
+      console.error(
+        '[github-activity] GITHUB_TOKEN rechazado (401): caducado o revocado. ' +
+          'Sirviendo datos públicos sin token; renuévalo en Vercel.'
+      );
+      ({ payload } = await buildPayload(undefined));
+    }
 
-    // Si la fuente principal viene vacía (sin token, o GraphQL caído) se recurre
-    // a la actividad pública, que al menos cubre los últimos ~90 días.
-    const contributed =
-      primary.length > 0 ? primary : await reposFromActivity(headers, POOL);
-
-    const repos = mergeByRecency(contributed, owned).slice(0, LIMIT);
-
-    const profileRaw: GitHubProfile | null = profileRes.ok
-      ? await profileRes.json()
-      : null;
-    const profile = profileRaw
-      ? { publicRepos: profileRaw.public_repos, followers: profileRaw.followers }
-      : null;
-
-    return new Response(JSON.stringify({ repos, profile, activity: activityStats }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (payload.repos.length > 0) {
+      memo = { data: payload, at: Date.now() };
+      lastGood = payload;
+      return json(payload);
+    }
+    return json(lastGood ?? payload);
   } catch {
-    return new Response(JSON.stringify({ error: 'Failed to fetch' }), { status: 500 });
+    if (lastGood) return json(lastGood);
+    return json({ error: 'Failed to fetch' }, 500);
   }
 }
