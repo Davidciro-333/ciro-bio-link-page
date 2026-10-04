@@ -38,7 +38,7 @@
 
       const fill = document.getElementById('sp-progress-fill');
       const time = document.getElementById('sp-progress-time');
-      if (fill) fill.style.width = pct + '%';
+      if (fill) fill.style.transform = `scaleX(${pct / 100})`;
       if (time) time.textContent = `${fmt(current)} / ${fmt(durationMs)}`;
 
       if (current >= durationMs && progressInterval) {
@@ -92,7 +92,7 @@
               </div>
               <div class="progress-wrap">
                 <div class="progress-bar">
-                  <div class="progress-fill" id="sp-progress-fill" style="width:${startPct}%;transition:none"></div>
+                  <div class="progress-fill" id="sp-progress-fill" style="transform:scaleX(${startPct / 100});transition:none"></div>
                 </div>
                 <div class="progress-time" id="sp-progress-time">${fmt(song.progressMs)} / ${fmt(song.durationMs)}</div>
               </div>

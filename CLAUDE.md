@@ -8,6 +8,8 @@ Guía para trabajar en este repositorio. El proyecto es un **bio-link personal**
 - **Tailwind CSS v4** vía el plugin de Vite `@tailwindcss/vite` (no hay `tailwind.config`; se importa con `@import "tailwindcss"` en `src/styles/global.css`).
 - **TypeScript** en modo `strict` (extiende `astro/tsconfigs/strict`).
 - `bootstrap-icons` como dependencia (iconos).
+- Fuentes **alojadas en el sitio** con `@fontsource-variable/inter` y `@fontsource-variable/space-grotesk` (familias `'Inter Variable'` y `'Space Grotesk Variable'`), importadas en `Layout.astro` con `preload` del subset latino. No volver a Google Fonts: eran dos conexiones extra y una hoja que bloqueaba el render.
+- `build.inlineStylesheets: 'always'`: el CSS va dentro del HTML para no bloquear el primer render con otra petición.
 - `psn-api` para la integración de PlayStation (API no oficial de PSN).
 - El idioma del sitio y de la UI es **español** (`<html lang="es">`).
 
@@ -78,7 +80,8 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 ### Temas y paletas (CSS variables)
 - El tema (`dark`/`light`) y la paleta viven como atributos en `<html>`: `data-theme` y `data-palette`.
 - Se inicializan con un script inline en `Layout.astro` (lee `localStorage`, con fallback a `prefers-color-scheme`) **antes** del render para evitar flash.
-- `ThemeToggle.astro` alterna el tema y persiste en `localStorage`. Usa la clase temporal `.theme-transitioning` + `void html.offsetHeight` para forzar una transición suave.
+- `ThemeToggle.astro` alterna el tema y persiste en `localStorage`. La transición usa **View Transitions** (`document.startViewTransition`): el navegador funde una captura del antes y otra del después en la GPU (0.35 s, definido en `::view-transition-*(root)` en `global.css`). Sin soporte o con `prefers-reduced-motion`, el cambio es instantáneo.
+- ⚠️ **No volver a transicionar colores con `html.x *`.** Era el método anterior (`.theme-transitioning`) y causaba el "tirón": con ~600 elementos (heatmap, estrellas, paneles con `backdrop-filter`) el primer frame tras el clic tardaba ~400 ms y la transición iba a ~5 fps con CPU de móvil. Con View Transitions: ~90 ms y ~49 fps. Medido 2026-10-04.
 - Todo el estilado se hace con **CSS custom properties** (`--bg`, `--surface`, `--text`, `--accent-*`, etc.) definidas por selector `html[data-theme=...][data-palette=...]` en `global.css`. Al añadir estilos, usa estas variables en vez de colores fijos.
 - Paletas existentes: **`silver`** (default) y **`obsidian`**. Cada una tiene variante `dark` y `light`.
 - El JSON `theme` (colores hex dark/light) es heredado/base; la implementación real de color está en `global.css`.
@@ -172,6 +175,8 @@ Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 4. Actualiza el secret del repo: `gh secret set PSN_NPSSO --repo Davidciro-333/ciro-bio-link-page` (y el `.env` local si quieres el fallback en dev). **No hace falta redeploy**: el sitio lee del Gist, no de PSN.
 
 ### Efectos visuales
+- Las animaciones infinitas deben usar solo `transform`/`opacity` (corren en la GPU). El ecualizador escala con `scaleY`, la barra de progreso de Spotify con `scaleX` y el pulso del punto "en vivo" anima la opacidad de un halo (`.sp-dot::after`, color vía `currentColor`). Animar `height`, `width` o `box-shadow` recalculaba layout/pintura en cada frame.
+
 `Layout.astro` genera 55 "estrellas" por JS y aplica un efecto de "cursor glow" local (variables `--mouse-x`/`--mouse-y` por elemento) sobre `.link-btn`, `.widget` y `.social-icon`. Los orbes de fondo (`.orb-1/2/3`) son divs con blur.
 
 ## Notas

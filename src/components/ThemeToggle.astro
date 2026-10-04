@@ -10,18 +10,24 @@
   const current = html.getAttribute('data-theme') || 'dark';
   btn.textContent = current === 'dark' ? '🌙' : '☀️';
 
-  btn.addEventListener('click', () => {
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    const next = isDark ? 'light' : 'dark';
-
-    html.classList.add('theme-transitioning');
-    // Force style recalc so the browser registers the "from" state before the theme change
-    void html.offsetHeight;
-
+  function apply(next: string) {
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     btn.textContent = next === 'dark' ? '🌙' : '☀️';
+  }
 
-    setTimeout(() => html.classList.remove('theme-transitioning'), 450);
+  btn.addEventListener('click', () => {
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+
+    // View Transitions: el navegador captura el antes y el después y los funde
+    // en la GPU, con un único recálculo de estilos. Transicionar los colores de
+    // cada elemento con CSS congelaba la página ~400 ms en móvil (ver global.css).
+    // Sin soporte, o con movimiento reducido, el cambio es instantáneo.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!document.startViewTransition || reduceMotion) {
+      apply(next);
+      return;
+    }
+    document.startViewTransition(() => apply(next));
   });
 </script>
