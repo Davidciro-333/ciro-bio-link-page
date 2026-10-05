@@ -52,8 +52,11 @@ const {
 
         const setup = () => {
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          W = canvas.width = window.innerWidth * dpr;
-          H = canvas.height = window.innerHeight * dpr;
+          // Se mide el propio canvas (100lvh), no innerHeight, que cambia con la
+          // barra del navegador móvil.
+          const rect = canvas.getBoundingClientRect();
+          W = canvas.width = rect.width * dpr;
+          H = canvas.height = rect.height * dpr;
           motes = Array.from({ length: 44 }, () => ({
             x: Math.random() * W, y: Math.random() * H,
             r: (0.6 + Math.random() * 1.6) * dpr, v: (0.07 + Math.random() * 0.22) * dpr,
@@ -76,7 +79,14 @@ const {
 
         setup();
         draw();
-        window.addEventListener('resize', setup);
+        // En móvil, "resize" salta cada vez que la barra de direcciones aparece o
+        // se esconde; solo se rehace el polvo si cambia el ancho (giro, ventana).
+        let lastWidth = window.innerWidth;
+        window.addEventListener('resize', () => {
+          if (window.innerWidth === lastWidth) return;
+          lastWidth = window.innerWidth;
+          setup();
+        });
         // Sin pestaña visible no hay nada que animar.
         document.addEventListener('visibilitychange', () => {
           cancelAnimationFrame(frame);
