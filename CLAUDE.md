@@ -36,9 +36,11 @@ src/
 │   ├── spotify.ts             ← getAccessToken() compartido (refresh-token flow de Spotify)
 │   ├── client.ts              ← utilidades de navegador para los widgets (escapeHtml, timeAgo, setEntryMeta, iconos)
 │   ├── playstation.ts         ← getPsnAuthorization() con cache de token en memoria (solo dev)
-│   └── psn-cache.ts           ← lee el Gist donde el job de Actions publica el estado de PSN
+│   ├── psn-cache.ts           ← lee el Gist donde el job de Actions publica el estado de PSN
+│   └── cripta.ts              ← lee y valida public.json de cripta-datos en el build
 ├── pages/
 │   ├── index.astro           ← página principal, compone todos los widgets
+│   ├── cripta.astro          ← Cripta del Saber: recursos que David publica desde su bot (se genera en el build)
 │   ├── privacidad.astro      ← política de privacidad
 │   └── api/                    ← endpoints SSR (prerender=false), corren como funciones en Vercel
 │       ├── now-playing.ts       ← canción actual de Spotify
@@ -151,6 +153,14 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 - Requiere el scope **`playlist-modify-public`** en el refresh token: ya está en `scripts/spotify-auth.mjs`, pero un token generado antes de añadirlo **no lo tiene** → hay que regenerarlo.
 - Si falta `SPOTIFY_PLAYLIST_ID`, el endpoint responde 503 y la tarjeta ni se renderiza.
 
+### Cripta del Saber (`/cripta`)
+- Página **estática**: en el build, `src/lib/cripta.ts` lee `public.json` del repo privado `Davidciro-333/cripta-datos` con `GITHUB_TOKEN` y lo valida con zod (`astro/zod`). **Si falla, el build falla a propósito**: Vercel sigue sirviendo el despliegue anterior y nunca sale una Cripta vacía por error. Solo se aceptan URLs `http(s)`.
+- Se actualiza sola: al publicar o despublicar desde el bot, la Action `indexar` de `cripta-datos` regenera `public.json` y llama al deploy hook de Vercel (secreto `VERCEL_DEPLOY_HOOK_BIOLINK` en ese repo).
+- La lista completa va en el HTML (sin JS se ve todo); el `<script>` solo filtra por texto, tipo, nivel y hashtag, con el estado en la URL (`?q=&tipo=&nivel=&tag=`).
+- Estilos en `src/styles/cripta.css` (solo los importa esa página), hechos **solo con los tokens** de `global.css` y las piezas de la portada (`.back-link`, `.ornament`, `.appear`, `.site-footer`): si cambia el diseño del sitio, la Cripta lo hereda; lo propio de la página (filas de hallazgo, filtros) está en ese archivo.
+- El proyecto Cripta (bot, Worker, datos) vive en `ciroProjects/cripta`; su `SDD.md` §4.9 describe esta página.
+- En local, si `GITHUB_TOKEN` del `.env` está caducado, el build falla en `/cripta` con 401: `GITHUB_TOKEN="$(gh auth token)" npm run build`.
+
 ### Variables de entorno (`.env`, git-ignorado)
 Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 
@@ -164,7 +174,8 @@ Se acceden con `import.meta.env.*`. En producción deben configurarse en Vercel.
 | `TELEGRAM_CHAT_ID` | No | Aviso de nueva recomendación |
 | `PSN_GIST_ID` | Sí (PS) | Gist del que el sitio lee la cache de PlayStation |
 | `GITHUB_USERNAME` | No | GitHub (default: `Davidciro-333`), también dueño del Gist |
-| `GITHUB_TOKEN` | Recomendada | GitHub — sin él no hay contribuciones ni heatmap. Con scope `repo` incluye además los repos privados |
+| `GITHUB_TOKEN` | **Sí** (build) | GitHub — sin él no hay contribuciones ni heatmap. Con scope `repo` incluye además los repos privados. **El build de `/cripta` lo necesita** para leer `cripta-datos` |
+| `CRIPTA_REPO` | No | Repo de datos de la Cripta (default `Davidciro-333/cripta-datos`) |
 
 **Secrets del repo de GitHub** (para el job `psn-cache`, se configuran con `gh secret set`):
 

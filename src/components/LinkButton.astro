@@ -7,9 +7,11 @@ interface Props {
 }
 
 const { title, url, main = false } = Astro.props;
+// Las páginas del propio sitio (/cripta) se abren en la misma pestaña.
+const externo = /^https?:\/\//.test(url);
 ---
 
-<a href={url} target="_blank" rel="noopener noreferrer" class:list={['link-btn', { 'is-main': main }]}>
+<a href={url} target={externo ? '_blank' : undefined} rel={externo ? 'noopener noreferrer' : undefined} class:list={['link-btn', { 'is-main': main }]}>
   <span class="mk" aria-hidden="true"></span>
   {title}
   <span class="mk" aria-hidden="true"></span>

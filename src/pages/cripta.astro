@@ -1,0 +1,196 @@
+---
+// Cripta del Saber: lo que David publica desde su bot de Telegram (proyecto Cripta).
+// Se genera en el build a partir de `public.json`; un deploy hook lo reconstruye al publicar algo.
+import Layout from '../layouts/Layout.astro';
+import '../styles/cripta.css';
+import { ETIQUETAS, NIVELES, TIPOS, type Tipo, fechaCorta, leerCripta, normalizar } from '../lib/cripta';
+import iRepo from 'bootstrap-icons/icons/github.svg?raw';
+import iSkill from 'bootstrap-icons/icons/puzzle.svg?raw';
+import iMcp from 'bootstrap-icons/icons/plug.svg?raw';
+import iHerramienta from 'bootstrap-icons/icons/tools.svg?raw';
+import iGuia from 'bootstrap-icons/icons/journal-text.svg?raw';
+import iPrompt from 'bootstrap-icons/icons/chat-quote.svg?raw';
+import iReel from 'bootstrap-icons/icons/camera-reels.svg?raw';
+import iVideo from 'bootstrap-icons/icons/play-btn.svg?raw';
+import iArticulo from 'bootstrap-icons/icons/newspaper.svg?raw';
+import iIdea from 'bootstrap-icons/icons/lightbulb.svg?raw';
+import iLamp from 'bootstrap-icons/icons/lamp.svg?raw';
+import iBuscar from 'bootstrap-icons/icons/search.svg?raw';
+import iFuera from 'bootstrap-icons/icons/arrow-up-right.svg?raw';
+import iQuitar from 'bootstrap-icons/icons/x.svg?raw';
+
+const ICONOS: Record<Tipo, string> = {
+  repo: iRepo, skill: iSkill, mcp: iMcp, herramienta: iHerramienta, guia: iGuia,
+  prompt: iPrompt, reel: iReel, video: iVideo, articulo: iArticulo, idea: iIdea,
+};
+// Los SVG vienen del paquete bootstrap-icons (contenido propio, no de terceros): se pueden incrustar.
+const svg = (s: string) => s.replace('<svg ', '<svg aria-hidden="true" focusable="false" ');
+
+const { recursos } = await leerCripta();
+const cuenta = (campo: 'tipo' | 'nivel', valor: string) => recursos.filter((r) => r[campo] === valor).length;
+const tipos = TIPOS.filter((t) => cuenta('tipo', t) > 0);
+const niveles = NIVELES.filter((n) => cuenta('nivel', n) > 0);
+const ultima = recursos[0]?.publicado_en;
+---
+
+<Layout title="Cripta del Saber · David Ciro" description="Herramientas, skills y guías que David Ciro encuentra y vale la pena guardar.">
+  <main class="page-container cripta">
+    <a class="back-link appear" href="/">← itsciro.com</a>
+
+    <header class="cripta-hero">
+      <span class="cripta-lamp appear" style="animation-delay:.08s" set:html={svg(iLamp)} />
+      <h1 class="cripta-title appear" style="animation-delay:.14s">Cripta del Saber</h1>
+      <p class="profile-title appear" style="animation-delay:.2s">lo que encuentro y vale la pena guardar</p>
+      <p class="cripta-intro appear" style="animation-delay:.26s">Herramientas, skills y guías que pruebo o uso. Las elijo a mano, una por una.</p>
+    </header>
+
+    <svg class="ornament" viewBox="0 0 220 22" aria-hidden="true">
+      <path d="M2 11 H86 C94 11 96 4 103 4 M218 11 H134 C126 11 124 4 117 4" />
+      <path d="M86 11 C94 11 98 18 104 18 M134 11 C126 11 122 18 116 18" />
+      <rect class="gem" x="106" y="7" width="8" height="8" transform="rotate(45 110 11)" />
+    </svg>
+
+    {recursos.length === 0 ? (
+      <p class="cripta-empty is-on appear" style="animation-delay:.38s">Todavía no hay nada publicado. Vuelve pronto.</p>
+    ) : (
+      <>
+        <section class="appear" style="animation-delay:.38s" aria-label="Buscar y filtrar">
+          <div class="cripta-search">
+            <label for="cripta-q">Buscar en la cripta</label>
+            <p class="cripta-hint" id="cripta-q-hint">Por nombre, descripción, hashtag o autor.</p>
+            <div class="cripta-field">
+              <span set:html={svg(iBuscar)} />
+              <input id="cripta-q" type="search" autocomplete="off" placeholder="diagramas, video, mcp…" aria-describedby="cripta-q-hint" />
+            </div>
+          </div>
+
+          <div class="cripta-filters">
+            <div class="cripta-filter-row" role="group" aria-label="Tipo">
+              <span class="cripta-filter-label">tipo</span>
+              <button class="cripta-chip" type="button" data-tipo="" aria-pressed="true">Todo <span class="n">{recursos.length}</span></button>
+              {tipos.map((t) => (
+                <button class="cripta-chip" type="button" data-tipo={t} aria-pressed="false">{ETIQUETAS[t][1]} <span class="n">{cuenta('tipo', t)}</span></button>
+              ))}
+            </div>
+            {niveles.length > 1 && (
+              <div class="cripta-filter-row" role="group" aria-label="Nivel">
+                <span class="cripta-filter-label">nivel</span>
+                <button class="cripta-chip" type="button" data-nivel="" aria-pressed="true">Cualquiera</button>
+                {niveles.map((n) => (
+                  <button class="cripta-chip" type="button" data-nivel={n} aria-pressed="false">{n[0]!.toUpperCase() + n.slice(1)}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section class="appear" style="animation-delay:.46s" aria-labelledby="cripta-lista">
+          <h2 id="cripta-lista" class="sr-only">Hallazgos</h2>
+          <div class="cripta-status">
+            <span class="cripta-count" id="cripta-count" aria-live="polite">{recursos.length === 1 ? '1 hallazgo' : `${recursos.length} hallazgos`}</span>
+            <button class="cripta-tag-active" id="cripta-tag-active" type="button" hidden></button>
+          </div>
+          <ul class="cripta-items" id="cripta-items">
+            {recursos.map((r) => (
+              <li
+                class="hallazgo"
+                data-tipo={r.tipo}
+                data-nivel={r.nivel ?? ''}
+                data-tags={r.hashtags.join(' ')}
+                data-texto={normalizar([r.nombre, r.descripcion, r.hashtags.join(' '), r.autor ?? ''].join(' '))}
+              >
+                <span class="hallazgo-icon" set:html={svg(ICONOS[r.tipo])} />
+                <div class="hallazgo-body">
+                  <div class="hallazgo-head">
+                    <span class="hallazgo-name">
+                      {r.url ? (
+                        <a href={r.url} target="_blank" rel="noopener noreferrer">{r.nombre}<span class="hallazgo-ext" set:html={svg(iFuera)} /></a>
+                      ) : r.nombre}
+                    </span>
+                    <time class="hallazgo-date" datetime={r.publicado_en}>{fechaCorta(r.publicado_en)}</time>
+                  </div>
+                  <div class="hallazgo-sub">{[ETIQUETAS[r.tipo][0], r.nivel, r.autor].filter(Boolean).join(' · ')}</div>
+                  {r.descripcion && <p class="hallazgo-desc">{r.descripcion}</p>}
+                  {r.hashtags.length > 0 && (
+                    <div class="hallazgo-tags">
+                      {r.hashtags.slice(0, 4).map((t) => (
+                        <button class="hallazgo-tag" type="button" data-tag={t} aria-pressed="false">#{t}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div class="cripta-empty" id="cripta-empty">
+            Nada en la cripta con esos filtros.<br />
+            <button type="button" id="cripta-limpiar">Quitar los filtros</button>
+          </div>
+        </section>
+      </>
+    )}
+
+    <footer class="site-footer">
+      <a href="/">Volver</a>
+      {ultima && <span class="cripta-when">actualizada el {fechaCorta(ultima)}</span>}
+    </footer>
+  </main>
+</Layout>
+
+<script>
+  // La lista completa ya está en el HTML; esto solo filtra. Estado en la URL: ?q=&tipo=&nivel=&tag=
+  const lista = document.getElementById('cripta-items');
+  if (lista) {
+    const items = [...lista.querySelectorAll<HTMLLIElement>('.hallazgo')];
+    const q = document.getElementById('cripta-q') as HTMLInputElement;
+    const cuenta = document.getElementById('cripta-count')!;
+    const vacio = document.getElementById('cripta-empty')!;
+    const tagActivo = document.getElementById('cripta-tag-active') as HTMLButtonElement;
+    const estado = { q: '', tipo: '', nivel: '', tag: '' };
+    const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+    const aplicar = () => {
+      const palabras = norm(estado.q).split(/\s+/).filter(Boolean);
+      let visibles = 0;
+      for (const li of items) {
+        const d = li.dataset;
+        const ok =
+          palabras.every((p) => (d.texto ?? '').includes(p)) &&
+          (!estado.tipo || d.tipo === estado.tipo) &&
+          (!estado.nivel || d.nivel === estado.nivel) &&
+          (!estado.tag || (d.tags ?? '').split(' ').includes(estado.tag));
+        li.hidden = !ok;
+        if (ok) visibles++;
+      }
+      cuenta.textContent = visibles === 1 ? '1 hallazgo' : `${visibles} hallazgos`;
+      vacio.classList.toggle('is-on', visibles === 0);
+      document.querySelectorAll<HTMLElement>('[data-tipo]').forEach((b) => b.tagName === 'BUTTON' && b.setAttribute('aria-pressed', String(b.dataset.tipo === estado.tipo)));
+      document.querySelectorAll<HTMLElement>('[data-nivel]').forEach((b) => b.tagName === 'BUTTON' && b.setAttribute('aria-pressed', String(b.dataset.nivel === estado.nivel)));
+      document.querySelectorAll<HTMLElement>('button[data-tag]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tag === estado.tag)));
+      tagActivo.hidden = !estado.tag;
+      tagActivo.textContent = estado.tag ? `#${estado.tag} ×` : '';
+      tagActivo.setAttribute('aria-label', estado.tag ? `Quitar el filtro #${estado.tag}` : '');
+      const p = new URLSearchParams();
+      for (const [k, v] of Object.entries(estado)) if (v) p.set(k, v);
+      history.replaceState(null, '', p.toString() ? `?${p}` : location.pathname);
+    };
+
+    const params = new URLSearchParams(location.search);
+    for (const k of Object.keys(estado) as Array<keyof typeof estado>) estado[k] = params.get(k) ?? '';
+    q.value = estado.q;
+    aplicar();
+
+    q.addEventListener('input', () => { estado.q = q.value; aplicar(); });
+    document.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest('button');
+      if (!b) return;
+      if (b.classList.contains('cripta-chip') && 'tipo' in b.dataset) estado.tipo = b.dataset.tipo ?? '';
+      else if (b.classList.contains('cripta-chip') && 'nivel' in b.dataset) estado.nivel = b.dataset.nivel ?? '';
+      else if (b.classList.contains('hallazgo-tag')) estado.tag = estado.tag === b.dataset.tag ? '' : (b.dataset.tag ?? '');
+      else if (b === tagActivo) estado.tag = '';
+      else if (b.id === 'cripta-limpiar') { estado.q = estado.tipo = estado.nivel = estado.tag = ''; q.value = ''; }
+      else return;
+      aplicar();
+    });
+  }
+</script>
