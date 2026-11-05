@@ -1,0 +1,78 @@
+/* ── CRIPTA DEL SABER (/cripta) ──
+   Misma columna, tokens y piezas que la portada (back-link, ornamento, filas con luz de farol):
+   todo sale de los tokens de global.css, así que si cambia el diseño esta página lo hereda. */
+.cripta { padding-top: 36px; }
+.cripta .back-link { margin-bottom: 0; }
+.cripta-hero { text-align: center; margin-top: 18px; position: relative; }
+.cripta-hero::before {
+  content: ''; position: absolute; left: 50%; top: -40px; width: 300px; height: 220px; margin-left: -150px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--lamp-rgb), 0.13), transparent 62%); animation: breathe 7s ease-in-out infinite;
+}
+.cripta-lamp { display: inline-block; color: var(--lamp); filter: drop-shadow(0 0 10px rgba(var(--lamp-rgb), 0.5)); }
+.cripta-lamp svg { width: 22px; height: 22px; fill: currentColor; display: block; }
+.cripta-title { font-family: var(--font-display); font-weight: 600; font-size: 46px; line-height: 1; margin: 14px 0 8px; }
+.cripta-intro { max-width: 32ch; margin: 16px auto 0; color: var(--muted); line-height: 1.6; }
+
+.cripta-search { background: var(--surface); border-radius: 6px; padding: 16px 18px 18px; box-shadow: 0 0 0 1px var(--ink-line); transition: box-shadow var(--slow) var(--ease); }
+.cripta-search:focus-within { box-shadow: var(--glow); }
+.cripta-search label { display: block; font-family: var(--font-display); font-weight: 600; font-size: 23px; line-height: 1.1; }
+.cripta-hint { color: var(--muted); font-size: 15px; margin: 4px 0 10px; }
+.cripta-field { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--muted); transition: border-color 0.4s; }
+.cripta-search:focus-within .cripta-field { border-color: var(--lamp); }
+.cripta-field svg { width: 15px; height: 15px; fill: var(--muted); display: block; }
+.cripta-field input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--text); font: inherit; font-size: 16px; padding: 10px 0; }
+.cripta-field input::placeholder { color: var(--muted); opacity: 0.7; }
+
+.cripta-filters { margin-top: 22px; display: grid; gap: 10px; }
+.cripta-filter-row { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; }
+.cripta-filter-label { color: var(--muted); font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 16px; }
+.cripta-chip, .hallazgo-tag, .cripta-tag-active, .cripta-empty button { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.cripta-chip { position: relative; min-height: 36px; font-size: 15px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; transition: color 0.4s; }
+.cripta-chip .n { font-size: 13px; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.cripta-chip::after { content: ''; position: absolute; left: 0; right: 0; bottom: 6px; height: 1px; background: var(--lamp); transform: scaleX(0); transform-origin: left; transition: transform var(--slow) var(--ease); }
+.cripta-chip[aria-pressed="true"] { color: var(--text); }
+.cripta-chip[aria-pressed="true"]::after { transform: scaleX(1); }
+.cripta-chip:focus-visible, .hallazgo-tag:focus-visible, .cripta-tag-active:focus-visible, .cripta-empty button:focus-visible { outline: 1px dashed var(--lamp); outline-offset: 4px; }
+
+.cripta-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; min-height: 36px; }
+.cripta-count, .cripta-when { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cripta-tag-active { color: var(--lamp); font-size: 14px; min-height: 36px; }
+
+.cripta-items { list-style: none; margin: 8px 0 0; padding: 0; }
+.hallazgo { position: relative; display: grid; grid-template-columns: 44px 1fr; gap: 14px; padding: 14px 8px; margin: 0 -8px; border-radius: 6px; transition: box-shadow var(--slow) var(--ease); -webkit-tap-highlight-color: transparent; }
+.hallazgo[hidden] { display: none; }
+.hallazgo + .hallazgo::before { content: ''; position: absolute; top: 0; left: 8px; right: 8px; height: 1px; background: var(--ink-line); transition: opacity 0.4s; }
+.hallazgo:focus-within { box-shadow: var(--glow); }
+.hallazgo:focus-within::before, .hallazgo:focus-within + .hallazgo::before { opacity: 0; }
+.hallazgo-icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); box-shadow: 0 0 0 1px var(--ink-line); transition: color 0.4s, box-shadow var(--slow) var(--ease); }
+.hallazgo-icon svg { width: 18px; height: 18px; fill: currentColor; display: block; }
+.hallazgo:focus-within .hallazgo-icon { color: var(--lamp); box-shadow: 0 0 0 1px rgba(var(--lamp-rgb), 0.55); }
+.hallazgo-body { min-width: 0; }
+.hallazgo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.hallazgo-name { font-weight: 500; line-height: 1.4; min-width: 0; overflow-wrap: anywhere; }
+.hallazgo-name a { outline: none; }
+.hallazgo-name a::after { content: ''; position: absolute; inset: 0; border-radius: 6px; } /* toda la fila abre el enlace */
+.hallazgo-ext svg { width: 11px; height: 11px; fill: var(--muted); display: inline-block; margin-left: 5px; opacity: 0; transition: opacity 0.4s; }
+.hallazgo-date { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 16px; color: var(--muted); white-space: nowrap; }
+.hallazgo-sub { color: var(--muted); font-size: 14px; line-height: 1.4; }
+.hallazgo-desc { color: var(--muted); font-size: 15px; line-height: 1.5; margin: 6px 0 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.hallazgo-tags { display: flex; flex-wrap: wrap; gap: 0 12px; margin-top: 4px; position: relative; z-index: 1; }
+.hallazgo-tag { min-height: 30px; font-size: 13px; color: var(--muted); transition: color 0.4s; }
+.hallazgo-tag[aria-pressed="true"] { color: var(--lamp); }
+
+.cripta-empty { display: none; padding: 28px 0 8px; color: var(--muted); font-size: 15px; }
+.cripta-empty.is-on { display: block; }
+.cripta-empty button { color: var(--lamp); margin-top: 6px; min-height: 44px; font-size: 15px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .hallazgo:hover { box-shadow: var(--glow); }
+  .hallazgo:hover::before, .hallazgo:hover + .hallazgo::before { opacity: 0; }
+  .hallazgo:hover .hallazgo-icon { color: var(--lamp); box-shadow: 0 0 0 1px rgba(var(--lamp-rgb), 0.55); }
+  .hallazgo:hover .hallazgo-ext svg { opacity: 1; }
+  .cripta-chip:hover, .hallazgo-tag:hover { color: var(--lamp); }
+  .cripta-tag-active:hover { color: var(--text); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cripta-hero::before { animation: none; }
+}
