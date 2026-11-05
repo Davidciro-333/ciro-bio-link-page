@@ -158,6 +158,7 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 - Se actualiza sola: al publicar o despublicar desde el bot, la Action `indexar` de `cripta-datos` regenera `public.json` y llama al deploy hook de Vercel (secreto `VERCEL_DEPLOY_HOOK_BIOLINK` en ese repo).
 - La lista completa va en el HTML (sin JS se ve todo); el `<script>` solo filtra por texto, tipo, nivel y hashtag, con el estado en la URL (`?q=&tipo=&nivel=&tag=`).
 - Estilos en `src/styles/cripta.css` (solo los importa esa página), hechos **solo con los tokens** de `global.css` y las piezas de la portada (`.back-link`, `.ornament`, `.appear`, `.site-footer`): si cambia el diseño del sitio, la Cripta lo hereda; lo propio de la página (filas de hallazgo, filtros) está en ese archivo.
+- Orden por defecto: **más recientes** por `creado` (llegada a la cripta, ISO con hora); también «más antiguos» y «A–Z» (`?orden=`). Un reel publicado llega como lo que presenta (el repo, la herramienta) y trae `visto_en` con el link del reel, que se muestra como «visto en un reel».
 - El proyecto Cripta (bot, Worker, datos) vive en `ciroProjects/cripta`; su `SDD.md` §4.9 describe esta página.
 - En local, si `GITHUB_TOKEN` del `.env` está caducado, el build falla en `/cripta` con 401: `GITHUB_TOKEN="$(gh auth token)" npm run build`.
 

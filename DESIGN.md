@@ -108,7 +108,7 @@ Orden fijo de arriba abajo:
    - **Código:** cifra de contribuciones del mes + racha → heatmap del último año → los 5 repos más recientes (los privados sin enlace, con "privado").
 5. **Footer:** Política de privacidad a la izquierda.
 
-**Cripta del Saber (`/cripta`)**, página aparte con la misma columna: «← itsciro.com», cabecera centrada (farol, título 46px, línea en itálica, frase), ornamento, buscador (como "Déjame una canción"), filtros de tipo y nivel como pestañas de texto con conteo, y la lista de hallazgos alineada a la izquierda: filas con icono en círculo de 44px, nombre, fecha en Cormorant itálica, "Tipo · nivel · autor", descripción a 2 líneas y hasta 4 hashtags que filtran. Toda la fila es el enlace y se ilumina con `--glow`. Es el segundo enlace de la portada, bajo "Mi Portafolio".
+**Cripta del Saber (`/cripta`)**, página aparte con la misma columna: «← itsciro.com», cabecera centrada (farol, título 46px, línea en itálica, frase), ornamento, buscador (como "Déjame una canción"), filtros de tipo y nivel como pestañas de texto con conteo, una fila de orden (más recientes, más antiguos, A–Z), y la lista de hallazgos alineada a la izquierda: filas con icono en círculo de 44px, nombre, fecha en Cormorant itálica, "Tipo · nivel · autor" (más «visto en un reel» subrayado si salió de un video), descripción a 2 líneas y hasta 4 hashtags que filtran. Toda la fila es el enlace y se ilumina con `--glow`. Es el segundo enlace de la portada, bajo "Mi Portafolio".
 
 **Reglas de composición:**
 - La cabecera y los enlaces van **centrados**; todo lo del diario va **alineado a la izquierda**. No mezclar dentro de un bloque.

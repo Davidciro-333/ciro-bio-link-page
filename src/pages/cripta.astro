@@ -3,7 +3,7 @@
 // Se genera en el build a partir de `public.json`; un deploy hook lo reconstruye al publicar algo.
 import Layout from '../layouts/Layout.astro';
 import '../styles/cripta.css';
-import { ETIQUETAS, NIVELES, TIPOS, type Tipo, fechaCorta, leerCripta, normalizar } from '../lib/cripta';
+import { ETIQUETAS, NIVELES, TIPOS, type Tipo, fechaCorta, leerCripta, normalizar, textoVistoEn } from '../lib/cripta';
 import iRepo from 'bootstrap-icons/icons/github.svg?raw';
 import iSkill from 'bootstrap-icons/icons/puzzle.svg?raw';
 import iMcp from 'bootstrap-icons/icons/plug.svg?raw';
@@ -81,6 +81,12 @@ const ultima = recursos[0]?.publicado_en;
                 ))}
               </div>
             )}
+            <div class="cripta-filter-row" role="group" aria-label="Orden">
+              <span class="cripta-filter-label">orden</span>
+              <button class="cripta-chip" type="button" data-orden="" aria-pressed="true">Más recientes</button>
+              <button class="cripta-chip" type="button" data-orden="antiguos" aria-pressed="false">Más antiguos</button>
+              <button class="cripta-chip" type="button" data-orden="az" aria-pressed="false">A–Z</button>
+            </div>
           </div>
         </section>
 
@@ -91,9 +97,11 @@ const ultima = recursos[0]?.publicado_en;
             <button class="cripta-tag-active" id="cripta-tag-active" type="button" hidden></button>
           </div>
           <ul class="cripta-items" id="cripta-items">
-            {recursos.map((r) => (
+            {recursos.map((r, i) => (
               <li
                 class="hallazgo"
+                data-llegada={i}
+                data-nombre={normalizar(r.nombre)}
                 data-tipo={r.tipo}
                 data-nivel={r.nivel ?? ''}
                 data-tags={r.hashtags.join(' ')}
@@ -109,7 +117,12 @@ const ultima = recursos[0]?.publicado_en;
                     </span>
                     <time class="hallazgo-date" datetime={r.publicado_en}>{fechaCorta(r.publicado_en)}</time>
                   </div>
-                  <div class="hallazgo-sub">{[ETIQUETAS[r.tipo][0], r.nivel, r.autor].filter(Boolean).join(' · ')}</div>
+                  <div class="hallazgo-sub">
+                    {[ETIQUETAS[r.tipo][0], r.nivel, r.autor].filter(Boolean).join(' · ')}
+                    {r.visto_en && (
+                      <> · <a class="hallazgo-via" href={r.visto_en} target="_blank" rel="noopener noreferrer">{textoVistoEn(r.visto_en)}</a></>
+                    )}
+                  </div>
                   {r.descripcion && <p class="hallazgo-desc">{r.descripcion}</p>}
                   {r.hashtags.length > 0 && (
                     <div class="hallazgo-tags">
@@ -138,7 +151,8 @@ const ultima = recursos[0]?.publicado_en;
 </Layout>
 
 <script>
-  // La lista completa ya está en el HTML; esto solo filtra. Estado en la URL: ?q=&tipo=&nivel=&tag=
+  // La lista completa ya está en el HTML (de más reciente a más antiguo); esto filtra y reordena.
+  // Estado en la URL: ?q=&tipo=&nivel=&tag=&orden=
   const lista = document.getElementById('cripta-items');
   if (lista) {
     const items = [...lista.querySelectorAll<HTMLLIElement>('.hallazgo')];
@@ -146,10 +160,20 @@ const ultima = recursos[0]?.publicado_en;
     const cuenta = document.getElementById('cripta-count')!;
     const vacio = document.getElementById('cripta-empty')!;
     const tagActivo = document.getElementById('cripta-tag-active') as HTMLButtonElement;
-    const estado = { q: '', tipo: '', nivel: '', tag: '' };
+    const estado = { q: '', tipo: '', nivel: '', tag: '', orden: '' };
     const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
+    const ordenar = () => {
+      const llegada = (li: HTMLLIElement) => Number(li.dataset.llegada);
+      const orden = [...items].sort((a, b) =>
+        estado.orden === 'az' ? (a.dataset.nombre ?? '').localeCompare(b.dataset.nombre ?? '', 'es')
+        : estado.orden === 'antiguos' ? llegada(b) - llegada(a)
+        : llegada(a) - llegada(b));
+      lista.append(...orden);
+    };
+
     const aplicar = () => {
+      ordenar();
       const palabras = norm(estado.q).split(/\s+/).filter(Boolean);
       let visibles = 0;
       for (const li of items) {
@@ -166,6 +190,7 @@ const ultima = recursos[0]?.publicado_en;
       vacio.classList.toggle('is-on', visibles === 0);
       document.querySelectorAll<HTMLElement>('[data-tipo]').forEach((b) => b.tagName === 'BUTTON' && b.setAttribute('aria-pressed', String(b.dataset.tipo === estado.tipo)));
       document.querySelectorAll<HTMLElement>('[data-nivel]').forEach((b) => b.tagName === 'BUTTON' && b.setAttribute('aria-pressed', String(b.dataset.nivel === estado.nivel)));
+      document.querySelectorAll<HTMLElement>('button[data-orden]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.orden === estado.orden)));
       document.querySelectorAll<HTMLElement>('button[data-tag]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tag === estado.tag)));
       tagActivo.hidden = !estado.tag;
       tagActivo.textContent = estado.tag ? `#${estado.tag} ×` : '';
@@ -186,9 +211,10 @@ const ultima = recursos[0]?.publicado_en;
       if (!b) return;
       if (b.classList.contains('cripta-chip') && 'tipo' in b.dataset) estado.tipo = b.dataset.tipo ?? '';
       else if (b.classList.contains('cripta-chip') && 'nivel' in b.dataset) estado.nivel = b.dataset.nivel ?? '';
+      else if (b.classList.contains('cripta-chip') && 'orden' in b.dataset) estado.orden = b.dataset.orden ?? '';
       else if (b.classList.contains('hallazgo-tag')) estado.tag = estado.tag === b.dataset.tag ? '' : (b.dataset.tag ?? '');
       else if (b === tagActivo) estado.tag = '';
-      else if (b.id === 'cripta-limpiar') { estado.q = estado.tipo = estado.nivel = estado.tag = ''; q.value = ''; }
+      else if (b.id === 'cripta-limpiar') { estado.q = estado.tipo = estado.nivel = estado.tag = ''; q.value = ''; } // el orden se queda
       else return;
       aplicar();
     });
