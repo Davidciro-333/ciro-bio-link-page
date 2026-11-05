@@ -34,6 +34,10 @@ const Recurso = z.object({
   fuente: z.string().max(40).optional(),
   autor: z.string().max(100).nullable().optional(),
   publicado_en: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  // Llegada a la cripta (ISO con hora): ordena «más recientes».
+  creado: z.string().max(40).nullable().optional(),
+  // Reel o video donde salió lo publicado (el recurso es lo que el video presenta).
+  visto_en: z.string().max(2000).refine((u) => /^https?:\/\//i.test(u), 'visto_en no http(s)').nullable().optional(),
 });
 
 const Publico = z.object({ generado: z.string(), recursos: z.array(Recurso) });
@@ -51,9 +55,18 @@ export async function leerCripta(): Promise<{ generado: string; recursos: Recurs
   if (!res.ok) throw new Error(`Cripta del Saber: GitHub respondió ${res.status} al leer public.json`);
 
   const datos = Publico.parse(await res.json());
-  const recursos = [...datos.recursos].sort((a, b) => b.publicado_en.localeCompare(a.publicado_en) || a.nombre.localeCompare(b.nombre));
+  const recursos = [...datos.recursos].sort((a, b) => llegada(b) - llegada(a) || a.nombre.localeCompare(b.nombre));
   return { generado: datos.generado, recursos };
 }
+
+/** Milisegundos de llegada: `creado` si viene, si no el día de publicación. */
+export function llegada(r: Pick<Recurso, 'creado' | 'publicado_en'>): number {
+  const t = Date.parse(r.creado ?? '');
+  return Number.isNaN(t) ? Date.parse(`${r.publicado_en}T00:00:00Z`) : t;
+}
+
+/** «visto en un reel» / «visto en un video», según de dónde venga. */
+export const textoVistoEn = (url: string) => (/youtube\.com|youtu\.be/.test(url) ? 'visto en un video' : 'visto en un reel');
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
