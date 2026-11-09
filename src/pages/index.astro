@@ -46,6 +46,7 @@ const entries = [
     <header class="hero">
       <div class="portrait appear">
         <Image src={profilePic} alt={profile.name} width={116} height={116} densities={[1, 2]} loading="eager" />
+        <svg class="portrait-waves" id="portrait-waves" viewBox="-88 -88 176 176" aria-hidden="true"></svg>
       </div>
       <span class="handle appear" style="animation-delay:.08s">{profile.handle}</span>
       <h1 class="profile-name appear" style="animation-delay:.14s">{profile.name}</h1>
@@ -108,4 +109,11 @@ const entries = [
   } else {
     caret?.remove();
   }
+</script>
+
+<script>
+  // Anillo de olas del retrato: solo aparece cuando SpotifyCard dice que suena algo.
+  import { mountRing } from '../lib/waves';
+  const ring = document.getElementById('portrait-waves');
+  if (ring instanceof SVGSVGElement) mountRing(ring);
 </script>
