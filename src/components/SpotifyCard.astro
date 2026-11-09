@@ -18,6 +18,8 @@
 
 <script>
   import { escapeHtml, formatMs, setEntryMeta, ICONS } from '../lib/client';
+  import { mountThread, setNowPlaying } from '../lib/waves';
+  import { applyPalette, coverPalette } from '../lib/palette';
 
   const card = document.getElementById('spotify-card');
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -41,6 +43,11 @@
     tick();
     // Con movimiento reducido el CSS quita la transición: el hilo salta en vez de deslizarse.
     timer = setInterval(tick, 1000);
+  }
+
+  function silence() {
+    applyPalette(null);
+    setNowPlaying({ isPlaying: false, progressMs: 0, durationMs: 0, fetchedAt: Date.now(), tempo: null, energy: null });
   }
 
   async function load() {
@@ -71,14 +78,30 @@
                 <p class="feature-sub">${escapeHtml(song.artist)}</p>
               </div>
             </div>
-            <div class="thread" aria-hidden="true"><span class="thread-fill" id="sp-thread"></span></div>
+            <div class="thread" aria-hidden="true"><svg class="thread-waves" id="sp-waves"></svg><span class="thread-fill" id="sp-thread"></span></div>
             <div class="times"><span id="sp-now"></span><span>${formatMs(song.durationMs)}</span></div>`;
+          const waves = document.getElementById('sp-waves');
+          if (waves instanceof SVGSVGElement) mountThread(waves);
+          // Las olas toman los colores de la portada; si no hay color que sacar, ámbar.
+          coverPalette(song.albumImageUrl).then((p) => {
+            if (current === key) applyPalette(p);
+          });
         }
+        // Las olas del hilo y del retrato van con el progreso y el tempo de la canción.
+        setNowPlaying({
+          isPlaying: true,
+          progressMs: song.progressMs ?? 0,
+          durationMs: song.durationMs ?? 0,
+          fetchedAt,
+          tempo: typeof song.tempo === 'number' ? song.tempo : null,
+          energy: typeof song.energy === 'number' ? song.energy : null,
+        });
         if (song.durationMs > 0) startTimer(song.progressMs, song.durationMs, fetchedAt);
         return;
       }
 
       stopTimer();
+      silence();
       setEntryMeta('musica', 'en silencio');
       if (current === 'idle') return;
       current = 'idle';
@@ -93,6 +116,7 @@
         </div>`;
     } catch {
       stopTimer();
+      silence();
       current = '';
       setEntryMeta('musica', 'Spotify');
       card.innerHTML = `<p class="note">No pude leer Spotify ahora mismo.</p>`;

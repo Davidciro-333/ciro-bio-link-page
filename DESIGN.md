@@ -28,11 +28,13 @@ Todos los colores van como custom properties en `:root`. No se usan colores fuer
 | `--text` | `#ebe5d5` | Texto principal (hueso cálido, nunca `#fff`) | 15.5:1 |
 | `--muted` | `#98a0aa` | Texto secundario, metadatos, iconos en reposo | 7.4:1 |
 | `--lamp` | `#e6b85c` | **Único acento.** Estado en vivo, selección, hover, enlace principal | 10.5:1 |
+
+**Única excepción: las olas de la música.** Las olas del retrato y del hilo de progreso (y la línea y el rombo del hilo) toman la paleta de la portada que suena, como el reproductor de One UI. Mientras suena, el halo del retrato también toma su color vivo (`--wv-3`). Las variables `--wv-1..3` (tripletas `r, g, b`) las pone `src/lib/palette.ts` en `:root`, aclaradas a luminosidad .52 / .62 / .68 para leerse sobre `--bg`; sin paleta (portada gris o negra, error) vuelven a `--lamp`. Nada más de la interfaz usa esos colores.
 | `--lamp-rgb` | `230, 184, 92` | El mismo ámbar para `rgba()` | |
 
 **Atmósfera (solo decorativa, fija, `pointer-events: none`):**
 - Niebla inferior: `radial-gradient(70% 38% at 50% 100%, rgba(111,130,150,0.16), transparent 70%)`.
-- Halo del farol detrás del retrato: `radial-gradient(circle, rgba(var(--lamp-rgb),0.22), transparent 62%)`.
+- Halo del farol detrás del retrato: `radial-gradient(circle, rgba(var(--lamp-rgb),0.22), transparent 62%)`. Mientras suena música, el ámbar cambia por el color vivo de la ola (§2).
 
 **Luz de farol (`--glow`)**, el "borde que brilla":
 ```css
@@ -132,7 +134,9 @@ Orden fijo de arriba abajo:
 
 **Indicador en vivo.** Punto de 6px `--lamp` con `box-shadow: 0 0 10px` que parpadea como una llama + etiqueta de estado. Solo aparece cuando el dato está realmente en vivo.
 
-**Hilo con gema (progreso).** Línea de 1px en `--ink-line`; el tramo recorrido es un degradado de ámbar al 20 % a `--lamp`, y termina en un rombo de 8px con brillo. Debajo, tiempos 13px en `--muted`.
+**Hilo con gema (progreso).** Línea de 1px en `--ink-line`; el tramo recorrido es un degradado del color de la portada (`--wv-3`) al 20 % a su color pleno, y termina en un rombo de 8px con brillo. Sobre el tramo recorrido, tres capas de olas translúcidas (14 / 22 / 34 %) de hasta 14px de alto. Debajo, tiempos 13px en `--muted`.
+
+**Anillo de olas (retrato).** Solo mientras suena algo. Desde el aro exterior del retrato (r = 66px) salen tres capas de olas translúcidas (14 / 22 / 34 %, hasta 14px hacia fuera) alrededor de todo el retrato, sin línea de progreso: el progreso lo cuenta el hilo de la tarjeta. Cada capa da 3, 5 y 8 ondas por vuelta, así la ola cierra sin corte. Mismos colores que el hilo. Aparece y se desvanece en ~1s; el halo pasa al color vivo de la ola y vuelve al ámbar en silencio (1.2s, `--halo` registrado con `@property`). No es el anillo cónico girando prohibido en §9: es luz que ondula con la música y desaparece en silencio.
 
 **Pestañas de texto** (Últimas / Más escuchados del mes). Texto 15px `--muted`; la activa en `--text` con subrayado de 1px `--lamp`.
 
@@ -169,11 +173,13 @@ Orden fijo de arriba abajo:
 | Llama (indicador en vivo) | Parpadeo irregular de opacidad 1 → .55 → .9 → .6, 3.2s. |
 | Cambio de entrada del diario | La página nueva entra con `opacity 0 → 1`, `translateY(8px) → 0`, `blur(4px) → 0` en 0.9s. |
 | Hilo de progreso | Avanza cada 1s con `transition: width 1s linear`, interpolado localmente entre fetches. |
+| Olas de la música | `src/lib/waves.ts`, un único `requestAnimationFrame` para el anillo y el hilo. Las crestas avanzan en el sentido del reloj (en el hilo, hacia la derecha). Velocidad según el tempo real de la canción (ReccoBeats, a `tempo/160`) y altura según su energía, con un empujón suave en cada tiempo (la fase no está alineada con los golpes, solo la velocidad). Sin tempo, fluyen despacio y bajitas, sin pulso. El color cambia entre canciones con una transición de 1.2s. |
 | Hover/focus | Ver componentes: la respuesta es siempre "acercar el farol" (`--glow`, color `--lamp`) y como mucho `translateY(-2px/-3px)`. |
 
 **Reglas:**
 - Solo se animan `transform`, `opacity`, `filter` y `box-shadow`. Nunca `width/height/top/left` (excepto el hilo de progreso, de 1px).
-- `prefers-reduced-motion: reduce`: se apagan polvo, halo, llama, escritura (la frase aparece completa), ornamento (aparece dibujado) y el avance del hilo; las transiciones bajan a 0.01ms.
+- Excepción: las olas redibujan el atributo `d` de 4 paths SVG pequeños por frame. Se paran con la pestaña oculta y en silencio.
+- `prefers-reduced-motion: reduce`: se apagan polvo, halo, llama, escritura (la frase aparece completa), ornamento (aparece dibujado) y el avance del hilo; las olas quedan quietas (se redibujan una vez por segundo con el progreso); las transiciones bajan a 0.01ms.
 - Teclado: las entradas del diario son un `tablist` con flechas izquierda/derecha, Inicio y Fin. Todo lo interactivo tiene foco visible.
 - Táctil: objetivos de al menos 44×44px.
 
@@ -192,7 +198,7 @@ Orden fijo de arriba abajo:
 Prohibido en este sitio:
 
 - **Del diseño anterior:** glassmorphism (`backdrop-filter`), orbes de colores desenfocados, estrellas parpadeantes, anillo cónico girando alrededor del avatar, nombre con degradado (`background-clip: text`), brillo diagonal que barre los botones, glow radial que sigue al cursor, toggle de tema con emoji.
-- **Colores:** cualquier azul, violeta, verde neón o degradado de color en la interfaz. Un segundo acento además de `--lamp`. Blanco puro `#fff` o negro puro `#000`.
+- **Colores:** cualquier azul, violeta, verde neón o degradado de color en la interfaz. Un segundo acento además de `--lamp` (salvo la paleta de la portada en las olas, §2). Blanco puro `#fff` o negro puro `#000`.
 - **Tipografía:** Space Grotesk, Inter, fuentes pixel (Press Start 2P, Silkscreen, Pixelify), etiquetas en mayúsculas con tracking ancho, texto de menos de 13px, Cormorant en párrafos.
 - **Ornamentación:** más de un ornamento, florituras góticas, marcos, calaveras, texturas de pergamino, ilustraciones SVG hechas a mano. Si empieza a parecer disfraz de Hollow Knight, sobra.
 - **Estructura:** tarjetas idénticas apiladas para cada widget, enlaces dentro de cajas, contenido de los widgets todos visibles a la vez, iconos sociales duplicados como botones grandes.

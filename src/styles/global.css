@@ -73,14 +73,28 @@ button { font: inherit; color: inherit; }
 .portrait { width: 116px; height: 116px; margin: 0 auto; position: relative; }
 .portrait::before {
   content: ''; position: absolute; inset: -60px; border-radius: 50%; z-index: -1;
-  background: radial-gradient(circle, rgba(var(--lamp-rgb), 0.22), transparent 62%);
+  /* Mientras suena música, el halo toma el color vivo de la ola (--wv-3); en
+     silencio vuelve al ámbar. --halo está registrado con @property para fundirse. */
+  --halo: rgba(var(--wv-3, var(--lamp-rgb)), 0.22);
+  background: radial-gradient(circle, var(--halo), transparent 62%);
+  transition: --halo 1.2s var(--ease);
   animation: breathe 7s ease-in-out infinite;
 }
+@property --halo { syntax: '<color>'; inherits: false; initial-value: rgba(230, 184, 92, 0.22); }
 .portrait img {
   width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;
   filter: saturate(0.78) contrast(1.05);
   box-shadow: 0 0 0 1px rgba(var(--text-rgb), 0.35), 0 0 0 7px var(--bg), 0 0 0 8px var(--ink-line);
 }
+/* Olas al ritmo de la canción (src/lib/waves.ts). Sin música, opacidad 0 y el
+   retrato queda como siempre. El anillo base (r=66) es el aro exterior del retrato. */
+.portrait-waves { position: absolute; inset: -30px; width: calc(100% + 60px); height: calc(100% + 60px); overflow: visible; pointer-events: none; opacity: 0; }
+/* Colores: paleta de la portada (src/lib/palette.ts pone --wv-1..3 en :root,
+   de la capa más profunda a la más viva); sin paleta, el ámbar de --lamp. */
+.wv-1 { fill: rgba(var(--wv-1, var(--lamp-rgb)), 0.14); }
+.wv-2 { fill: rgba(var(--wv-2, var(--lamp-rgb)), 0.22); }
+.wv-3 { fill: rgba(var(--wv-3, var(--lamp-rgb)), 0.34); }
+.wv-1, .wv-2, .wv-3 { transition: fill 1.2s var(--ease); }
 .handle { display: inline-block; margin-top: 22px; font-size: 14px; color: var(--muted); letter-spacing: 0.04em; }
 .profile-name { font-family: var(--font-display); font-weight: 600; font-size: 46px; line-height: 1; margin: 6px 0 0; }
 .profile-title { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 20px; color: var(--muted); margin: 8px 0 0; }
@@ -170,17 +184,20 @@ button { font: inherit; color: inherit; }
 .feature-sub { color: var(--muted); margin: 2px 0 0; }
 
 /* Hilo con gema (progreso de la canción) */
-.thread { height: 1px; background: var(--ink-line); margin-top: 18px; position: relative; clip-path: inset(-6px -6px -6px 0); }
+.thread { height: 1px; background: var(--ink-line); margin-top: 30px; position: relative; clip-path: inset(-20px -6px -6px 0); }
+/* Olas sobre el tramo recorrido; su base coincide con la línea del hilo. */
+.thread-waves { position: absolute; left: 0; bottom: 0; width: 100%; height: 16px; overflow: visible; pointer-events: none; }
 /* El tramo recorrido es una capa del ancho completo que se desplaza con transform
    (sin animar width); el recorte de .thread esconde lo que queda a la izquierda. */
 .thread-fill {
   position: absolute; inset: 0;
-  background: linear-gradient(90deg, rgba(var(--lamp-rgb), 0.2), var(--lamp));
+  background: linear-gradient(90deg, rgba(var(--wv-3, var(--lamp-rgb)), 0.2), rgb(var(--wv-3, var(--lamp-rgb))));
   transform: translateX(-100%); transition: transform 1s linear;
 }
 .thread-fill::after {
   content: ''; position: absolute; right: -4px; top: -4px; width: 8px; height: 8px;
-  background: var(--lamp); transform: rotate(45deg); box-shadow: 0 0 12px var(--lamp);
+  background: rgb(var(--wv-3, var(--lamp-rgb))); transform: rotate(45deg);
+  box-shadow: 0 0 12px rgb(var(--wv-3, var(--lamp-rgb)));
 }
 .times { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-top: 10px; font-variant-numeric: tabular-nums; }
 

@@ -35,6 +35,8 @@ src/
 ├── lib/
 │   ├── spotify.ts             ← getAccessToken() compartido (refresh-token flow de Spotify)
 │   ├── client.ts              ← utilidades de navegador para los widgets (escapeHtml, timeAgo, setEntryMeta, iconos)
+│   ├── waves.ts               ← olas del retrato y del hilo al ritmo de la canción (un solo rAF)
+│   ├── palette.ts             ← paleta de colores de la portada para las olas
 │   ├── playstation.ts         ← getPsnAuthorization() con cache de token en memoria (solo dev)
 │   ├── psn-cache.ts           ← lee el Gist donde el job de Actions publica el estado de PSN
 │   └── cripta.ts              ← lee y valida public.json de cripta-datos en el build
@@ -86,7 +88,7 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 
 ### Diseño "Farol" (CSS variables)
 - **Solo tema oscuro.** No hay toggle, ni `data-theme`, ni paletas alternativas (se eliminaron el 2026-10-04).
-- Todo el color sale de los tokens de `:root` en `global.css` (`--bg`, `--surface`, `--ink-line`, `--text`, `--muted`, `--lamp`, `--glow`). **Un solo acento: `--lamp` (ámbar).** No añadir colores fijos ni otros acentos; el verde de Spotify y el azul de PlayStation no se usan en la interfaz.
+- Todo el color sale de los tokens de `:root` en `global.css` (`--bg`, `--surface`, `--ink-line`, `--text`, `--muted`, `--lamp`, `--glow`). **Un solo acento: `--lamp` (ámbar).** No añadir colores fijos ni otros acentos; el verde de Spotify y el azul de PlayStation no se usan en la interfaz. **Única excepción:** las olas de la música toman la paleta de la portada (ver abajo).
 - Tipografía: Cormorant Garamond (nombre, títulos, enlaces) + Alegreya Sans (texto). Mínimo 13px.
 - Los widgets viven dentro de `Journal.astro` ("Mi diario"): una entrada abierta a la vez, con navegación por teclado (flechas, Inicio, Fin). Cada widget actualiza el texto de su entrada con `setEntryMeta()` ("sonando ahora", "desconectado", "171 este mes").
 - Cada widget tiene estado de carga (esqueletos `.sk` que respiran), vacío y error. Nunca el texto "Cargando...".
@@ -142,6 +144,12 @@ El perfil, los enlaces principales (`main_links`) y los iconos sociales (`social
 - **Por qué existe:** la lista de proyectos se mueve solo cuando hay commits en repos *visibles*. Si el trabajo reciente está en repos privados, el widget parece abandonado sin estarlo (caso real 2026-08-09: último repo listado "hace 6d" mientras había **171 contribuciones en 30 días**, 80 de ellas privadas).
 - El `contributionCalendar` de GraphQL **ya incluye las contribuciones privadas** en los totales, sin revelar en qué repo. Por eso el heatmap funciona incluso con un token sin scope `repo`; `restrictedContributionsCount` da aparte cuántas son restringidas.
 - La semana en curso llega incompleta del API; `activityStrip()` la rellena con `.gh-hm-pad` para no descuadrar la rejilla.
+
+### Olas de la música (anillo del retrato + hilo)
+- Mientras suena algo, el retrato lleva un anillo de olas translúcidas alrededor (estilo reproductor de One UI) y su halo toma el color de la ola; el hilo de «Ahora escuchando» lleva las mismas olas sobre lo ya sonado. En silencio, todo vuelve al ámbar y el anillo desaparece. Se probó una variante con línea de progreso y olas grises en el anillo y se descartó (2026-11-08). Detalle visual en DESIGN.md §2, §6 y §7.
+- `src/lib/waves.ts`: estado compartido (`setNowPlaying()`, lo llama `SpotifyCard`), un único `requestAnimationFrame` y los dibujantes `mountRing()` (en `index.astro`) y `mountThread()` (cada vez que la tarjeta pinta una canción). Se para en silencio y con la pestaña oculta; con movimiento reducido se redibuja una vez por segundo, sin ondular.
+- **Ritmo:** `now-playing.ts` añade `tempo` y `energy` desde **ReccoBeats** (`api.reccobeats.com/v1/audio-features?ids=<trackId>`, gratis, sin clave), con cache en memoria por canción y timeout de 1.5 s. 🚫 `audio-features`/`audio-analysis` de Spotify dan **403** a esta app (cerrados para apps nuevas desde nov. 2024; no es el token, verificado 2026-11-08). ReccoBeats no tiene todo el catálogo: sin tempo, las olas fluyen despacio sin pulso.
+- **Color:** `src/lib/palette.ts` lee la portada en un canvas de 32×32 (`i.scdn.co` responde con `access-control-allow-origin: *`), elige hasta 3 colores vivos y los pone en `--wv-1..3`. Portada gris/negra o error → ámbar.
 
 ### Recomendador de canciones (`song-search.ts` + `recommend-song.ts`)
 - `RecommendSongCard.astro` deja que un visitante busque una canción y la recomiende; se añade a una **playlist pública** de David y llega un aviso por **Telegram**.
